@@ -722,7 +722,10 @@ class SystemEvolutionManager:
             "explainable_ai": ExplainableAIInterpreter,
             "continuous_adaptation": ContinuousAdaptationManager,
             "ethical_reasoning": EthicalReasoningFramework,
-            "trust_calibration": TrustCalibrationManager
+            "trust_calibration": TrustCalibrationManager,
+            # TODO: Import and add these when their implementations are available
+            # "tone_adaptation": ToneAdaptationManager,
+            # "goal_alignment": GoalAlignmentManager,
         }
         
         for name, primitive_class in primitive_classes.items():

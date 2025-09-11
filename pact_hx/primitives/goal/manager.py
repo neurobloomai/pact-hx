@@ -1,4 +1,4 @@
-# pact_hx/primitives/goal_alignment/manager.py
+# pact_hx/primitives/goal/manager.py
 """
 PACT Goal Manager - Ethically-Guided Objective Setting
 

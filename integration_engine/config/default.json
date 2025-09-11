@@ -1,0 +1,124 @@
+{
+  "server": {
+    "port": 3001,
+    "apiPort": 3000,
+    "environment": "development"
+  },
+  "cors": {
+    "origins": [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "http://localhost:8080",
+      "http://127.0.0.1:3000"
+    ]
+  },
+  "redis": {
+    "enabled": true,
+    "url": "redis://localhost:6379",
+    "keyPrefix": "pact:",
+    "ttl": {
+      "session": 3600,
+      "student": 86400,
+      "temporary": 300
+    }
+  },
+  "creativeSynthesis": {
+    "apiUrl": "http://localhost:8000",
+    "timeout": 10000,
+    "retryAttempts": 3,
+    "fallbackToMock": true
+  },
+  "orchestration": {
+    "cycleInterval": 10000,
+    "adaptationCooldown": 120000,
+    "maxAdaptationsPerSession": 10,
+    "sessionTimeout": 1800000
+  },
+  "adaptation": {
+    "engagementThreshold": {
+      "low": 0.3,
+      "medium": 0.6,
+      "high": 0.8
+    },
+    "trustThreshold": {
+      "building": 0.3,
+      "developing": 0.6,
+      "strong": 0.8
+    },
+    "cooldownPeriods": {
+      "engagement": 120000,
+      "trust": 180000,
+      "progress": 300000,
+      "teacher": 60000
+    }
+  },
+  "dataCoordination": {
+    "syncInterval": 5000,
+    "bufferFlushInterval": 2000,
+    "maxBufferSize": 1000,
+    "profileCacheSize": 500
+  },
+  "components": {
+    "required": [
+      "creative_synthesis",
+      "engagement_tracker"
+    ],
+    "optional": [
+      "empathetic_interaction",
+      "teacher_dashboard",
+      "student_interface"
+    ],
+    "healthCheckInterval": 60000,
+    "heartbeatTimeout": 30000
+  },
+  "sessions": {
+    "defaultTimeLimit": 30,
+    "maxConcurrentSessions": 100,
+    "cleanupInterval": 300000,
+    "archiveAfterDays": 7
+  },
+  "analytics": {
+    "metricsRetention": 2592000000,
+    "aggregationInterval": 60000,
+    "exportFormats": ["json", "csv"]
+  },
+  "security": {
+    "rateLimit": {
+      "windowMs": 900000,
+      "max": 1000
+    },
+    "cors": {
+      "credentials": true,
+      "maxAge": 86400
+    },
+    "helmet": {
+      "contentSecurityPolicy": true,
+      "crossOriginEmbedderPolicy": false
+    }
+  },
+  "logging": {
+    "level": "info",
+    "format": "json",
+    "maxSize": "20m",
+    "maxFiles": 5,
+    "datePattern": "YYYY-MM-DD"
+  },
+  "monitoring": {
+    "healthChecks": {
+      "interval": 30000,
+      "timeout": 5000
+    },
+    "metrics": {
+      "enabled": true,
+      "interval": 60000
+    },
+    "alerts": {
+      "enabled": true,
+      "thresholds": {
+        "memory": 0.8,
+        "cpu": 0.7,
+        "errorRate": 0.05
+      }
+    }
+  }
+}

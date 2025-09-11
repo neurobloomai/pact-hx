@@ -102,6 +102,8 @@ class PrimitiveType(str, Enum):
     ETHICAL_REASONING = "ethical_reasoning"
     TRUST_CALIBRATION = "trust_calibration"
     SYSTEM_EVOLUTION = "system_evolution"
+    TONE_ADAPTATION = "tone_adaptation"  # Adaptive tone and communication style
+    GOAL_ALIGNMENT = "goal_alignment"    # Goal understanding and alignment
 
 # ============================================================================
 # Core Data Schemas

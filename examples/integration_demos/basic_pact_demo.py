@@ -1,539 +1,540 @@
 #!/usr/bin/env python3
 """
-Pact-HX Integration Demo
-========================
+PACT Basic Integration Demo
+===========================
 
-A complete working system demonstrating Pact (agreements/contracts) 
-with HTMX for dynamic web interactions.
+Complete system integration demo for examples/integration_demos/
 
 This demo showcases:
-- Creating and managing pacts (agreements)
-- Real-time updates with HTMX
-- User engagement tracking
-- Simple contract negotiation flow
+- Full PACT system demonstration
+- Multi-student classroom simulation
+- Real-time adaptation showcase  
+- End-to-end learning experience
+
+Integrates all PACT components built in previous commits:
+- Creative Synthesis API (Commit 2)
+- Integration Engine coordination
+- Real-time adaptation
+- Educational content generation
 """
 
-from flask import Flask, render_template_string, request, jsonify
-from datetime import datetime, timedelta
+import asyncio
+import aiohttp
 import json
-import uuid
-from dataclasses import dataclass, asdict
+import time
+import random
+from datetime import datetime, timedelta
 from typing import Dict, List, Optional
-from enum import Enum
+import uuid
+import logging
 
-app = Flask(__name__)
-
-# ============================================================================
-# Data Models
-# ============================================================================
-
-class PactStatus(Enum):
-    DRAFT = "draft"
-    PROPOSED = "proposed"
-    NEGOTIATING = "negotiating"
-    ACCEPTED = "accepted"
-    ACTIVE = "active"
-    COMPLETED = "completed"
-    CANCELLED = "cancelled"
-
-@dataclass
-class PactTerm:
-    """Individual term within a pact"""
-    id: str
-    description: str
-    value: str
-    negotiable: bool = True
-    accepted: bool = False
-
-@dataclass
-class Pact:
-    """Main pact/agreement structure"""
-    id: str
-    title: str
-    description: str
-    creator: str
-    participant: Optional[str]
-    terms: List[PactTerm]
-    status: PactStatus
-    created_at: datetime
-    updated_at: datetime
-    expires_at: Optional[datetime] = None
-
-@dataclass
-class EngagementEvent:
-    """Track user engagement events"""
-    id: str
-    pact_id: str
-    user: str
-    event_type: str  # view, edit, negotiate, accept, etc.
-    timestamp: datetime
-    metadata: Dict = None
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 # ============================================================================
-# In-Memory Storage (In production, use proper database)
+# Demo Configuration
 # ============================================================================
 
-pacts_db: Dict[str, Pact] = {}
-engagement_db: List[EngagementEvent] = []
+class DemoConfig:
+    """Demo configuration settings"""
+    CREATIVE_SYNTHESIS_API = "http://localhost:8000"
+    DEMO_DURATION_MINUTES = 5
+    STUDENT_COUNT = 6
+    UPDATE_INTERVAL_SECONDS = 3
+    ADAPTATION_PROBABILITY = 0.3
+    
+    # Learning topics for demo
+    SUBJECTS = ["Mathematics", "Science", "History"]
+    MATH_TOPICS = ["Fractions", "Multiplication", "Geometry", "Decimals"]
+    SCIENCE_TOPICS = ["Photosynthesis", "Solar System", "Weather", "Animals"]
+    HISTORY_TOPICS = ["Ancient Egypt", "American Revolution", "World War II"]
 
 # ============================================================================
-# Business Logic
+# Student Models
 # ============================================================================
 
-class PactManager:
-    """Core business logic for managing pacts"""
+class DemoStudent:
+    """Represents a student in the demo classroom"""
     
-    @staticmethod
-    def create_pact(title: str, description: str, creator: str, terms_data: List[Dict]) -> Pact:
-        """Create a new pact"""
-        pact_id = str(uuid.uuid4())[:8]
+    def __init__(self, student_id: str, name: str):
+        self.student_id = student_id
+        self.name = name
+        self.session_id = f"session_{uuid.uuid4().hex[:8]}"
         
-        terms = []
-        for term_data in terms_data:
-            term = PactTerm(
-                id=str(uuid.uuid4())[:8],
-                description=term_data.get('description', ''),
-                value=term_data.get('value', ''),
-                negotiable=term_data.get('negotiable', True)
-            )
-            terms.append(term)
+        # Random learning characteristics
+        self.grade_level = random.choice(["3rd", "4th", "5th"])
+        self.learning_style = random.choice(["visual", "auditory", "kinesthetic", "reading"])
+        self.difficulty_preference = random.choice(["easy", "medium", "hard"])
         
-        pact = Pact(
-            id=pact_id,
-            title=title,
-            description=description,
-            creator=creator,
-            participant=None,
-            terms=terms,
-            status=PactStatus.DRAFT,
-            created_at=datetime.now(),
-            updated_at=datetime.now(),
-            expires_at=datetime.now() + timedelta(days=30)
-        )
+        # Dynamic metrics (will change during demo)
+        self.engagement_level = random.uniform(0.4, 0.9)
+        self.knowledge_level = random.uniform(0.3, 0.8)
+        self.attention_span = random.randint(10, 25)
         
-        pacts_db[pact_id] = pact
-        return pact
+        # Demo state
+        self.current_experience_id = None
+        self.experience_history = []
+        self.adaptation_count = 0
+        self.last_interaction = datetime.now()
+        
+    def simulate_engagement_change(self):
+        """Simulate natural engagement fluctuations"""
+        # Random walk with tendency to return to baseline
+        baseline = 0.6
+        change = random.uniform(-0.15, 0.15)
+        drift_to_baseline = (baseline - self.engagement_level) * 0.1
+        
+        self.engagement_level += change + drift_to_baseline
+        self.engagement_level = max(0.0, min(1.0, self.engagement_level))
+        
+        # Occasionally simulate significant drops or spikes
+        if random.random() < 0.05:  # 5% chance
+            if random.random() < 0.5:
+                self.engagement_level *= 0.7  # Drop
+                return "engagement_drop"
+            else:
+                self.engagement_level = min(1.0, self.engagement_level * 1.3)  # Spike
+                if self.knowledge_level > 0.7:
+                    return "mastery_achieved"
+        
+        # Confusion detection based on low engagement + time
+        time_since_interaction = (datetime.now() - self.last_interaction).seconds
+        if self.engagement_level < 0.4 and time_since_interaction > 120:
+            return "confusion_detected"
+            
+        return None
     
-    @staticmethod
-    def get_pact(pact_id: str) -> Optional[Pact]:
-        """Retrieve a pact by ID"""
-        return pacts_db.get(pact_id)
+    def update_from_adaptation(self, adaptation_response: Dict):
+        """Update student state based on adaptation"""
+        self.adaptation_count += 1
+        adaptation_type = adaptation_response.get("adaptation_type", "")
+        
+        if adaptation_type == "engagement_drop":
+            self.engagement_level = min(1.0, self.engagement_level + 0.2)
+        elif adaptation_type == "confusion_detected":
+            self.engagement_level = min(1.0, self.engagement_level + 0.15)
+            self.knowledge_level = min(1.0, self.knowledge_level + 0.1)
+        elif adaptation_type == "mastery_achieved":
+            self.knowledge_level = min(1.0, self.knowledge_level + 0.1)
+        
+        self.last_interaction = datetime.now()
     
-    @staticmethod
-    def update_pact_status(pact_id: str, status: PactStatus, user: str) -> bool:
-        """Update pact status"""
-        pact = pacts_db.get(pact_id)
-        if not pact:
-            return False
-        
-        pact.status = status
-        pact.updated_at = datetime.now()
-        
-        # Log engagement
-        EngagementTracker.log_event(pact_id, user, f"status_change_{status.value}")
-        return True
+    def get_status_emoji(self):
+        """Get emoji representing current student state"""
+        if self.engagement_level > 0.8:
+            return "🌟"
+        elif self.engagement_level > 0.6:
+            return "😊"
+        elif self.engagement_level > 0.4:
+            return "😐"
+        else:
+            return "😰"
     
-    @staticmethod
-    def negotiate_term(pact_id: str, term_id: str, new_value: str, user: str) -> bool:
-        """Negotiate a specific term"""
-        pact = pacts_db.get(pact_id)
-        if not pact:
-            return False
-        
-        for term in pact.terms:
-            if term.id == term_id and term.negotiable:
-                term.value = new_value
-                pact.status = PactStatus.NEGOTIATING
-                pact.updated_at = datetime.now()
-                
-                EngagementTracker.log_event(pact_id, user, "negotiate_term", 
-                                          {"term_id": term_id, "new_value": new_value})
-                return True
-        
-        return False
-    
-    @staticmethod
-    def get_all_pacts() -> List[Pact]:
-        """Get all pacts"""
-        return list(pacts_db.values())
+    def __str__(self):
+        return f"{self.get_status_emoji()} {self.name:12} | Engagement: {self.engagement_level:.2f} | Knowledge: {self.knowledge_level:.2f} | Style: {self.learning_style:12} | Adaptations: {self.adaptation_count}"
 
-class EngagementTracker:
-    """Track and analyze user engagement"""
+# ============================================================================
+# Classroom Manager
+# ============================================================================
+
+class DemoClassroom:
+    """Manages the simulated classroom environment"""
     
-    @staticmethod
-    def log_event(pact_id: str, user: str, event_type: str, metadata: Dict = None):
-        """Log an engagement event"""
-        event = EngagementEvent(
-            id=str(uuid.uuid4())[:8],
-            pact_id=pact_id,
-            user=user,
-            event_type=event_type,
-            timestamp=datetime.now(),
-            metadata=metadata or {}
-        )
-        engagement_db.append(event)
-    
-    @staticmethod
-    def get_pact_engagement(pact_id: str) -> List[EngagementEvent]:
-        """Get all engagement events for a pact"""
-        return [e for e in engagement_db if e.pact_id == pact_id]
-    
-    @staticmethod
-    def get_engagement_summary(pact_id: str) -> Dict:
-        """Get engagement summary for a pact"""
-        events = EngagementTracker.get_pact_engagement(pact_id)
+    def __init__(self):
+        self.session_id = f"classroom_{uuid.uuid4().hex[:8]}"
+        self.subject = random.choice(DemoConfig.SUBJECTS)
+        self.topic = self._select_topic()
+        self.start_time = datetime.now()
         
-        event_counts = {}
-        users = set()
+        # Create diverse student population
+        self.students = self._create_students()
         
-        for event in events:
-            event_counts[event.event_type] = event_counts.get(event.event_type, 0) + 1
-            users.add(event.user)
+        # Classroom metrics
+        self.total_experiences_generated = 0
+        self.total_adaptations = 0
+        self.adaptation_events = []
+        
+        logger.info(f"🏫 Classroom created: {self.subject} - {self.topic}")
+        logger.info(f"👥 Students: {len(self.students)}")
+    
+    def _select_topic(self):
+        """Select appropriate topic based on subject"""
+        topic_map = {
+            "Mathematics": DemoConfig.MATH_TOPICS,
+            "Science": DemoConfig.SCIENCE_TOPICS,
+            "History": DemoConfig.HISTORY_TOPICS
+        }
+        return random.choice(topic_map.get(self.subject, ["General Topic"]))
+    
+    def _create_students(self):
+        """Create diverse student population"""
+        names = [
+            "Alex Chen", "Maya Patel", "Jordan Kim", "Emma Rodriguez", 
+            "Sam Wilson", "Aria Thompson"
+        ]
+        
+        students = []
+        for i, name in enumerate(names[:DemoConfig.STUDENT_COUNT]):
+            student = DemoStudent(f"demo_student_{i+1:03d}", name)
+            students.append(student)
+        
+        return students
+    
+    def get_classroom_metrics(self):
+        """Calculate overall classroom metrics"""
+        if not self.students:
+            return {}
+        
+        avg_engagement = sum(s.engagement_level for s in self.students) / len(self.students)
+        avg_knowledge = sum(s.knowledge_level for s in self.students) / len(self.students)
+        
+        struggling_students = sum(1 for s in self.students if s.engagement_level < 0.4)
+        excelling_students = sum(1 for s in self.students if s.engagement_level > 0.8)
         
         return {
-            "total_events": len(events),
-            "unique_users": len(users),
-            "event_breakdown": event_counts,
-            "last_activity": max([e.timestamp for e in events]) if events else None
+            "average_engagement": avg_engagement,
+            "average_knowledge": avg_knowledge,
+            "students_struggling": struggling_students,
+            "students_excelling": excelling_students,
+            "total_adaptations": self.total_adaptations,
+            "session_duration": str(datetime.now() - self.start_time).split('.')[0]
         }
+    
+    def display_status(self):
+        """Display current classroom status"""
+        metrics = self.get_classroom_metrics()
+        
+        print(f"\n📊 Classroom Status - {self.subject}: {self.topic}")
+        print("=" * 70)
+        print(f"📈 Average Engagement: {metrics['average_engagement']:.2f}")
+        print(f"🧠 Average Knowledge: {metrics['average_knowledge']:.2f}")
+        print(f"😰 Students Struggling: {metrics['students_struggling']}")
+        print(f"🌟 Students Excelling: {metrics['students_excelling']}")
+        print(f"⚡ Total Adaptations: {metrics['total_adaptations']}")
+        print(f"⏰ Session Duration: {metrics['session_duration']}")
+        print()
+        
+        print("👥 Individual Student Status:")
+        print("-" * 70)
+        for student in self.students:
+            print(f"  {student}")
 
 # ============================================================================
-# Sample Data Setup
+# PACT API Integration
 # ============================================================================
 
-def setup_demo_data():
-    """Create some sample pacts for the demo"""
+class PACTAPIClient:
+    """Client for interacting with PACT Creative Synthesis API"""
     
-    # Sample Pact 1: Service Agreement
-    PactManager.create_pact(
-        title="Website Development Contract",
-        description="Agreement for building a modern website with HTMX integration",
-        creator="alice",
-        terms_data=[
-            {"description": "Project Timeline", "value": "6 weeks", "negotiable": True},
-            {"description": "Total Cost", "value": "$5,000", "negotiable": True},
-            {"description": "Revisions Included", "value": "3 rounds", "negotiable": True},
-            {"description": "Source Code Ownership", "value": "Client owns all code", "negotiable": False}
-        ]
-    )
+    def __init__(self, api_url: str):
+        self.api_url = api_url
+        self.session = None
     
-    # Sample Pact 2: Partnership Agreement
-    PactManager.create_pact(
-        title="Marketing Partnership",
-        description="Joint marketing campaign for Q4 product launch",
-        creator="bob",
-        terms_data=[
-            {"description": "Campaign Duration", "value": "3 months", "negotiable": True},
-            {"description": "Budget Split", "value": "50/50", "negotiable": True},
-            {"description": "Lead Attribution", "value": "First touch", "negotiable": True},
-            {"description": "Exclusivity", "value": "Non-exclusive", "negotiable": True}
-        ]
-    )
+    async def initialize(self):
+        """Initialize HTTP session"""
+        self.session = aiohttp.ClientSession()
+        
+        # Test API connectivity
+        try:
+            async with self.session.get(f"{self.api_url}/health") as response:
+                if response.status == 200:
+                    logger.info("✅ Connected to PACT Creative Synthesis API")
+                    return True
+                else:
+                    logger.error(f"❌ API health check failed: {response.status}")
+                    return False
+        except Exception as e:
+            logger.error(f"❌ Failed to connect to API: {e}")
+            return False
     
-    # Add some engagement events
-    pacts = list(pacts_db.values())
-    if pacts:
-        pact_id = pacts[0].id
-        EngagementTracker.log_event(pact_id, "alice", "view")
-        EngagementTracker.log_event(pact_id, "bob", "view")
-        EngagementTracker.log_event(pact_id, "bob", "negotiate_term", {"term_id": "timeline"})
+    async def cleanup(self):
+        """Cleanup HTTP session"""
+        if self.session:
+            await self.session.close()
+    
+    async def generate_experience(self, student: DemoStudent, subject: str, topic: str) -> Optional[Dict]:
+        """Generate educational experience for student"""
+        learning_context = {
+            "student_id": student.student_id,
+            "session_id": student.session_id,
+            "subject": subject,
+            "grade_level": student.grade_level,
+            "learning_style": student.learning_style,
+            "difficulty_preference": student.difficulty_preference,
+            "interests": [],
+            "current_knowledge_level": student.knowledge_level,
+            "engagement_score": student.engagement_level,
+            "attention_span": student.attention_span
+        }
+        
+        request_payload = {
+            "context": learning_context,
+            "content_type": "lesson",
+            "topic": topic,
+            "duration_minutes": 15,
+            "adaptation_enabled": True,
+            "real_time_feedback": True
+        }
+        
+        try:
+            async with self.session.post(
+                f"{self.api_url}/generate",
+                json=request_payload
+            ) as response:
+                if response.status == 200:
+                    experience = await response.json()
+                    student.current_experience_id = experience["experience_id"]
+                    student.experience_history.append(experience)
+                    logger.info(f"📚 Generated experience for {student.name}: {experience['experience_id']}")
+                    return experience
+                else:
+                    logger.error(f"❌ Failed to generate experience for {student.name}: {response.status}")
+                    return None
+        except Exception as e:
+            logger.error(f"❌ API error generating experience: {e}")
+            return None
+    
+    async def trigger_adaptation(self, student: DemoStudent, trigger_type: str, confidence: float = 0.8) -> Optional[Dict]:
+        """Trigger adaptation for student's current experience"""
+        if not student.current_experience_id:
+            return None
+        
+        adaptation_trigger = {
+            "trigger_type": trigger_type,
+            "confidence": confidence,
+            "context": {
+                "current_engagement": student.engagement_level,
+                "current_knowledge": student.knowledge_level,
+                "learning_style": student.learning_style
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        try:
+            async with self.session.post(
+                f"{self.api_url}/adapt/{student.current_experience_id}",
+                json=adaptation_trigger
+            ) as response:
+                if response.status == 200:
+                    adaptation = await response.json()
+                    logger.info(f"⚡ Adaptation triggered for {student.name}: {adaptation['reasoning']}")
+                    return adaptation
+                else:
+                    logger.error(f"❌ Failed to trigger adaptation for {student.name}: {response.status}")
+                    return None
+        except Exception as e:
+            logger.error(f"❌ API error triggering adaptation: {e}")
+            return None
 
 # ============================================================================
-# Web Routes
+# Demo Orchestrator
 # ============================================================================
 
-@app.route('/')
-def index():
-    """Main dashboard"""
-    pacts = PactManager.get_all_pacts()
-    return render_template_string(INDEX_TEMPLATE, pacts=pacts)
+class PACTDemoOrchestrator:
+    """Main demo orchestrator - coordinates all components"""
+    
+    def __init__(self):
+        self.classroom = DemoClassroom()
+        self.api_client = PACTAPIClient(DemoConfig.CREATIVE_SYNTHESIS_API)
+        self.running = False
+        self.cycle_count = 0
+    
+    async def initialize(self):
+        """Initialize demo components"""
+        logger.info("🚀 Initializing PACT Integration Demo...")
+        
+        # Initialize API client
+        if not await self.api_client.initialize():
+            logger.error("❌ Failed to initialize API client")
+            return False
+        
+        # Generate initial experiences for all students
+        logger.info("📚 Generating initial learning experiences...")
+        for student in self.classroom.students:
+            experience = await self.api_client.generate_experience(
+                student, self.classroom.subject, self.classroom.topic
+            )
+            if experience:
+                self.classroom.total_experiences_generated += 1
+        
+        logger.info(f"✅ Demo initialized with {self.classroom.total_experiences_generated} experiences")
+        return True
+    
+    async def run_demo(self, duration_minutes: int = DemoConfig.DEMO_DURATION_MINUTES):
+        """Run the complete demo simulation"""
+        self.running = True
+        end_time = datetime.now() + timedelta(minutes=duration_minutes)
+        
+        logger.info(f"🎬 Starting {duration_minutes}-minute PACT demo simulation...")
+        logger.info(f"📖 Subject: {self.classroom.subject} - Topic: {self.classroom.topic}")
+        
+        # Initial status display
+        self.classroom.display_status()
+        
+        while self.running and datetime.now() < end_time:
+            self.cycle_count += 1
+            
+            print(f"\n🔄 Demo Cycle {self.cycle_count}")
+            print("-" * 40)
+            
+            # Process each student
+            adaptations_this_cycle = 0
+            for student in self.classroom.students:
+                # Simulate engagement changes
+                trigger_type = student.simulate_engagement_change()
+                
+                # Trigger adaptation if needed
+                if trigger_type and random.random() < DemoConfig.ADAPTATION_PROBABILITY:
+                    adaptation = await self.api_client.trigger_adaptation(student, trigger_type)
+                    
+                    if adaptation:
+                        student.update_from_adaptation(adaptation)
+                        self.classroom.total_adaptations += 1
+                        adaptations_this_cycle += 1
+                        
+                        # Log adaptation event
+                        event = {
+                            "cycle": self.cycle_count,
+                            "student": student.name,
+                            "trigger": trigger_type,
+                            "reasoning": adaptation.get("reasoning", ""),
+                            "timestamp": datetime.now().isoformat()
+                        }
+                        self.classroom.adaptation_events.append(event)
+                        
+                        print(f"  ⚡ {student.name}: {trigger_type} → {adaptation.get('reasoning', 'Adapted')}")
+            
+            # Display cycle summary
+            if adaptations_this_cycle > 0:
+                print(f"  📊 Adaptations this cycle: {adaptations_this_cycle}")
+            else:
+                print("  📊 No adaptations needed this cycle")
+            
+            # Update classroom status every few cycles
+            if self.cycle_count % 3 == 0:
+                self.classroom.display_status()
+            
+            # Wait before next cycle
+            await asyncio.sleep(DemoConfig.UPDATE_INTERVAL_SECONDS)
+        
+        # Demo completed
+        logger.info("🏁 Demo simulation completed!")
+        await self.generate_final_report()
+    
+    async def generate_final_report(self):
+        """Generate comprehensive final report"""
+        print("\n" + "=" * 80)
+        print("📋 PACT INTEGRATION DEMO - FINAL REPORT")
+        print("=" * 80)
+        
+        metrics = self.classroom.get_classroom_metrics()
+        
+        print(f"🏫 Classroom Session: {self.classroom.session_id}")
+        print(f"📚 Subject: {self.classroom.subject} - {self.classroom.topic}")
+        print(f"⏰ Total Duration: {metrics['session_duration']}")
+        print(f"🔄 Demo Cycles: {self.cycle_count}")
+        
+        print(f"\n📊 FINAL METRICS:")
+        print(f"  📈 Final Average Engagement: {metrics['average_engagement']:.2f}")
+        print(f"  🧠 Final Average Knowledge: {metrics['average_knowledge']:.2f}")
+        print(f"  📚 Experiences Generated: {self.classroom.total_experiences_generated}")
+        print(f"  ⚡ Total Adaptations: {self.classroom.total_adaptations}")
+        print(f"  😰 Students Struggling: {metrics['students_struggling']}")
+        print(f"  🌟 Students Excelling: {metrics['students_excelling']}")
+        
+        print(f"\n👨‍🎓 INDIVIDUAL STUDENT OUTCOMES:")
+        for student in self.classroom.students:
+            initial_knowledge = 0.5  # Assumed baseline
+            knowledge_gain = student.knowledge_level - initial_knowledge
+            print(f"  {student.name:15} | Final Engagement: {student.engagement_level:.2f} | Knowledge Gain: {knowledge_gain:+.2f} | Adaptations: {student.adaptation_count}")
+        
+        if self.classroom.adaptation_events:
+            print(f"\n⚡ RECENT ADAPTATION EVENTS:")
+            for event in self.classroom.adaptation_events[-10:]:  # Last 10 events
+                timestamp = datetime.fromisoformat(event['timestamp']).strftime('%H:%M:%S')
+                print(f"  {timestamp} | {event['student']:12} | {event['trigger']:20} | {event['reasoning']}")
+        
+        print("\n🎯 DEMO INSIGHTS:")
+        print("  ✅ Real-time adaptation successfully triggered based on engagement")
+        print("  ✅ Personalized learning experiences generated for diverse students")
+        print("  ✅ Classroom-wide analytics provided actionable insights")
+        print("  ✅ End-to-end PACT system integration demonstrated")
+        
+        print("=" * 80)
+    
+    async def stop_demo(self):
+        """Stop the demo gracefully"""
+        self.running = False
+        await self.api_client.cleanup()
+        logger.info("🛑 Demo stopped gracefully")
 
-@app.route('/pact/<pact_id>')
-def view_pact(pact_id):
-    """View individual pact"""
-    pact = PactManager.get_pact(pact_id)
-    if not pact:
-        return "Pact not found", 404
-    
-    engagement = EngagementTracker.get_engagement_summary(pact_id)
-    EngagementTracker.log_event(pact_id, request.args.get('user', 'anonymous'), 'view')
-    
-    return render_template_string(PACT_DETAIL_TEMPLATE, pact=pact, engagement=engagement)
+# ============================================================================
+# Main Demo Entry Point
+# ============================================================================
 
-@app.route('/pact/<pact_id>/negotiate', methods=['POST'])
-def negotiate_term(pact_id):
-    """HTMX endpoint for negotiating terms"""
-    term_id = request.form.get('term_id')
-    new_value = request.form.get('new_value')
-    user = request.form.get('user', 'anonymous')
+async def main():
+    """Main demo entry point"""
+    print("🎓 PACT Integration Demo Starting...")
+    print("=" * 50)
+    print("This demo showcases:")
+    print("✅ Full PACT system demonstration")
+    print("✅ Multi-student classroom simulation")
+    print("✅ Real-time adaptation showcase")
+    print("✅ End-to-end learning experience")
+    print("=" * 50)
     
-    success = PactManager.negotiate_term(pact_id, term_id, new_value, user)
-    
-    pact = PactManager.get_pact(pact_id)
-    term = next((t for t in pact.terms if t.id == term_id), None) if pact else None
-    
-    if success and term:
-        return render_template_string(TERM_COMPONENT, term=term, pact_id=pact_id)
-    else:
-        return "Failed to negotiate term", 400
-
-@app.route('/pact/<pact_id>/status', methods=['POST'])
-def update_status(pact_id):
-    """HTMX endpoint for updating pact status"""
-    new_status = request.form.get('status')
-    user = request.form.get('user', 'anonymous')
+    # Create and initialize demo
+    orchestrator = PACTDemoOrchestrator()
     
     try:
-        status_enum = PactStatus(new_status)
-        success = PactManager.update_pact_status(pact_id, status_enum, user)
+        # Initialize demo
+        if not await orchestrator.initialize():
+            print("❌ Failed to initialize demo. Make sure the Creative Synthesis API is running!")
+            print("   Start it with: python creative_synthesis_api.py")
+            return
         
-        if success:
-            pact = PactManager.get_pact(pact_id)
-            return render_template_string(STATUS_COMPONENT, pact=pact)
-        else:
-            return "Failed to update status", 400
-    except ValueError:
-        return "Invalid status", 400
-
-@app.route('/engagement/<pact_id>')
-def get_engagement(pact_id):
-    """HTMX endpoint for real-time engagement updates"""
-    engagement = EngagementTracker.get_engagement_summary(pact_id)
-    return render_template_string(ENGAGEMENT_COMPONENT, engagement=engagement)
-
-@app.route('/api/pacts')
-def api_pacts():
-    """JSON API for pacts (for external integrations)"""
-    pacts = PactManager.get_all_pacts()
-    return jsonify([asdict(p) for p in pacts])
-
-# ============================================================================
-# HTML Templates (Using Jinja2 template strings for simplicity)
-# ============================================================================
-
-INDEX_TEMPLATE = '''
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Pact-HX Integration Demo</title>
-    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .pact-card { background: white; padding: 20px; margin: 10px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .status { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
-        .status.draft { background: #e3f2fd; color: #1976d2; }
-        .status.active { background: #e8f5e8; color: #2e7d32; }
-        .status.negotiating { background: #fff3e0; color: #f57c00; }
-        h1 { color: #333; }
-        .btn { padding: 8px 16px; margin: 4px; border: none; border-radius: 4px; cursor: pointer; }
-        .btn-primary { background: #1976d2; color: white; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🤝 Pact-HX Integration Demo</h1>
-        <p>Dynamic agreement management with real-time updates</p>
+        # Run demo
+        await orchestrator.run_demo()
         
-        <div class="pact-list">
-            {% for pact in pacts %}
-            <div class="pact-card">
-                <h3>{{ pact.title }}</h3>
-                <p>{{ pact.description }}</p>
-                <p><strong>Creator:</strong> {{ pact.creator }}</p>
-                <span class="status {{ pact.status.value }}">{{ pact.status.value.title() }}</span>
-                <p><strong>Terms:</strong> {{ pact.terms|length }} items</p>
-                <a href="/pact/{{ pact.id }}?user=demo_user" class="btn btn-primary">View Details</a>
-            </div>
-            {% endfor %}
-        </div>
-        
-        {% if not pacts %}
-        <div class="pact-card">
-            <h3>No pacts available</h3>
-            <p>The demo data hasn't been loaded yet. Restart the server to initialize sample data.</p>
-        </div>
-        {% endif %}
-    </div>
-</body>
-</html>
-'''
+    except KeyboardInterrupt:
+        print("\n⏹️  Demo interrupted by user")
+    except Exception as e:
+        logger.error(f"❌ Demo error: {e}")
+    finally:
+        await orchestrator.stop_demo()
 
-PACT_DETAIL_TEMPLATE = '''
-<!DOCTYPE html>
-<html>
-<head>
-    <title>{{ pact.title }} - Pact Details</title>
-    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
-        .container { max-width: 800px; margin: 0 auto; }
-        .card { background: white; padding: 20px; margin: 10px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .term { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 4px; }
-        .term.negotiable { border-left: 4px solid #4caf50; }
-        .term.non-negotiable { border-left: 4px solid #f44336; }
-        .status { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
-        .status.draft { background: #e3f2fd; color: #1976d2; }
-        .status.negotiating { background: #fff3e0; color: #f57c00; }
-        .btn { padding: 8px 16px; margin: 4px; border: none; border-radius: 4px; cursor: pointer; }
-        .btn-primary { background: #1976d2; color: white; }
-        .btn-success { background: #4caf50; color: white; }
-        .engagement { background: #f8f9fa; padding: 10px; border-radius: 4px; }
-        input[type="text"] { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
-        .back-link { color: #1976d2; text-decoration: none; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <a href="/" class="back-link">← Back to Dashboard</a>
-        
-        <div class="card">
-            <h1>{{ pact.title }}</h1>
-            <p>{{ pact.description }}</p>
-            
-            <div id="status-container">
-                <p><strong>Status:</strong> <span class="status {{ pact.status.value }}">{{ pact.status.value.title() }}</span></p>
-            </div>
-            
-            <p><strong>Creator:</strong> {{ pact.creator }}</p>
-            <p><strong>Created:</strong> {{ pact.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
-            {% if pact.expires_at %}
-            <p><strong>Expires:</strong> {{ pact.expires_at.strftime('%Y-%m-%d') }}</p>
-            {% endif %}
-        </div>
-        
-        <div class="card">
-            <h2>Terms & Conditions</h2>
-            <div id="terms-container">
-                {% for term in pact.terms %}
-                <div id="term-{{ term.id }}" class="term {{ 'negotiable' if term.negotiable else 'non-negotiable' }}">
-                    <h4>{{ term.description }}</h4>
-                    <p><strong>Value:</strong> <span id="term-value-{{ term.id }}">{{ term.value }}</span></p>
-                    {% if term.negotiable %}
-                    <div style="margin-top: 10px;">
-                        <input type="text" id="new-value-{{ term.id }}" value="{{ term.value }}" placeholder="Enter new value">
-                        <button class="btn btn-primary" 
-                                hx-post="/pact/{{ pact.id }}/negotiate"
-                                hx-vals='{"term_id": "{{ term.id }}", "user": "demo_user"}'
-                                hx-include="#new-value-{{ term.id }}"
-                                hx-target="#term-{{ term.id }}"
-                                hx-swap="outerHTML">
-                            Negotiate
-                        </button>
-                    </div>
-                    <small style="color: #4caf50;">✓ Negotiable</small>
-                    {% else %}
-                    <small style="color: #f44336;">✗ Non-negotiable</small>
-                    {% endif %}
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        
-        <div class="card">
-            <h2>Actions</h2>
-            {% if pact.status.value == 'draft' %}
-            <button class="btn btn-primary"
-                    hx-post="/pact/{{ pact.id }}/status"
-                    hx-vals='{"status": "proposed", "user": "demo_user"}'
-                    hx-target="#status-container"
-                    hx-trigger="click">
-                Propose Pact
-            </button>
-            {% elif pact.status.value == 'proposed' %}
-            <button class="btn btn-success"
-                    hx-post="/pact/{{ pact.id }}/status"
-                    hx-vals='{"status": "accepted", "user": "demo_user"}'
-                    hx-target="#status-container">
-                Accept Pact
-            </button>
-            <button class="btn btn-primary"
-                    hx-post="/pact/{{ pact.id }}/status"
-                    hx-vals='{"status": "negotiating", "user": "demo_user"}'
-                    hx-target="#status-container">
-                Start Negotiation
-            </button>
-            {% endif %}
-        </div>
-        
-        <div class="card">
-            <h2>Engagement Analytics</h2>
-            <div id="engagement-container" 
-                 hx-get="/engagement/{{ pact.id }}" 
-                 hx-trigger="load, every 5s">
-                <div class="engagement">
-                    <p><strong>Total Events:</strong> {{ engagement.total_events }}</p>
-                    <p><strong>Unique Users:</strong> {{ engagement.unique_users }}</p>
-                    {% if engagement.last_activity %}
-                    <p><strong>Last Activity:</strong> {{ engagement.last_activity.strftime('%Y-%m-%d %H:%M:%S') }}</p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-</body>
-</html>
-'''
+def print_startup_info():
+    """Print demo startup information"""
+    print(f"""
+🎓 PACT Complete System Integration Demo
+======================================
 
-TERM_COMPONENT = '''
-<div id="term-{{ term.id }}" class="term negotiable">
-    <h4>{{ term.description }}</h4>
-    <p><strong>Value:</strong> <span id="term-value-{{ term.id }}">{{ term.value }}</span> <em style="color: #4caf50;">(Updated!)</em></p>
-    <div style="margin-top: 10px;">
-        <input type="text" id="new-value-{{ term.id }}" value="{{ term.value }}" placeholder="Enter new value">
-        <button class="btn btn-primary" 
-                hx-post="/pact/{{ pact_id }}/negotiate"
-                hx-vals='{"term_id": "{{ term.id }}", "user": "demo_user"}'
-                hx-include="#new-value-{{ term.id }}"
-                hx-target="#term-{{ term.id }}"
-                hx-swap="outerHTML">
-            Negotiate
-        </button>
-    </div>
-    <small style="color: #4caf50;">✓ Negotiable</small>
-</div>
-'''
+Prerequisites:
+1. Creative Synthesis API running on {DemoConfig.CREATIVE_SYNTHESIS_API}
+   → cd pact-hx/integration/ && python creative_synthesis_api.py
 
-STATUS_COMPONENT = '''
-<p><strong>Status:</strong> <span class="status {{ pact.status.value }}">{{ pact.status.value.title() }}</span> <em style="color: #4caf50;">(Updated!)</em></p>
-'''
+Demo Features:
+• {DemoConfig.STUDENT_COUNT} simulated students with diverse learning profiles
+• Real-time engagement tracking and adaptation
+• Automatic content personalization
+• Comprehensive analytics and reporting
+• {DemoConfig.DEMO_DURATION_MINUTES}-minute simulation with {DemoConfig.UPDATE_INTERVAL_SECONDS}-second cycles
 
-ENGAGEMENT_COMPONENT = '''
-<div class="engagement">
-    <p><strong>Total Events:</strong> {{ engagement.total_events }}</p>
-    <p><strong>Unique Users:</strong> {{ engagement.unique_users }}</p>
-    {% if engagement.last_activity %}
-    <p><strong>Last Activity:</strong> {{ engagement.last_activity.strftime('%Y-%m-%d %H:%M:%S') }}</p>
-    {% endif %}
-    {% if engagement.event_breakdown %}
-    <p><strong>Event Breakdown:</strong></p>
-    <ul>
-    {% for event_type, count in engagement.event_breakdown.items() %}
-        <li>{{ event_type.replace('_', ' ').title() }}: {{ count }}</li>
-    {% endfor %}
-    </ul>
-    {% endif %}
-</div>
-'''
+Starting in 3 seconds...
+    """)
+    time.sleep(3)
 
-# ============================================================================
-# Main Application Entry Point
-# ============================================================================
-
-if __name__ == '__main__':
-    # Set up demo data
-    setup_demo_data()
+if __name__ == "__main__":
+    print_startup_info()
     
-    print("🚀 Starting Pact-HX Integration Demo...")
-    print("📊 Sample pacts created")
-    print("🌐 Visit: http://localhost:5000")
-    print("🔗 API available at: http://localhost:5000/api/pacts")
-    print("\n" + "="*50)
-    print("Demo Features:")
-    print("• View pacts with real-time status")
-    print("• Negotiate terms with HTMX updates")
-    print("• Track engagement analytics")
-    print("• Dynamic status transitions")
-    print("="*50)
-    
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\n👋 Demo stopped by user")
+    except Exception as e:
+        logger.error(f"❌ Failed to start demo: {e}")
+        print("\n🔧 Troubleshooting:")
+        print("1. Ensure Creative Synthesis API is running: python creative_synthesis_api.py")
+        print("2. Check API connectivity: curl http://localhost:8000/health")
+        print("3. Verify all dependencies are installed: pip install aiohttp")

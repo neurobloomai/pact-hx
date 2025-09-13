@@ -39,9 +39,9 @@ logger = logging.getLogger(__name__)
 class DemoConfig:
     """Demo configuration settings"""
     CREATIVE_SYNTHESIS_API = "http://localhost:8000"
-    DEMO_DURATION_MINUTES = 5
+    DEMO_DURATION_MINUTES = 1
     STUDENT_COUNT = 6
-    UPDATE_INTERVAL_SECONDS = 3
+    UPDATE_INTERVAL_SECONDS = 10
     ADAPTATION_PROBABILITY = 0.3
     
     # Learning topics for demo

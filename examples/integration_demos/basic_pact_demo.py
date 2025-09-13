@@ -419,7 +419,8 @@ class PACTDemoOrchestrator:
             await asyncio.sleep(DemoConfig.UPDATE_INTERVAL_SECONDS)
         
         # Demo completed
-        logger.info("🏁 Demo simulation completed!")
+        reason = "time limit" if datetime.now() >= end_time else "cycle limit"
+        logger.info(f"🏁 Demo simulation completed! (Stopped due to {reason})")
         await self.generate_final_report()
     
     async def generate_final_report(self):

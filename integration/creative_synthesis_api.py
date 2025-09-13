@@ -28,11 +28,12 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize FastAPI app
+# Initialize FastAPI app with lifespan
 app = FastAPI(
     title="PACT Creative Synthesis API",
     description="Real-time educational experience generation and adaptation",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # CORS middleware for frontend integration

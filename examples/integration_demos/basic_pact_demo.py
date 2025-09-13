@@ -372,7 +372,7 @@ class PACTDemoOrchestrator:
         # Initial status display
         self.classroom.display_status()
         
-        while self.running and datetime.now() < end_time:
+        while self.running and datetime.now() < end_time and self.cycle_count < 10:
             self.cycle_count += 1
             
             print(f"\n🔄 Demo Cycle {self.cycle_count}")

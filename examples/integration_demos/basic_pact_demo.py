@@ -1,23 +1,19 @@
 #!/usr/bin/env python3
 """
-PACT Basic Integration Demo
-===========================
+PACT Basic Integration Demo - Web Server
+========================================
 
-Complete system integration demo for examples/integration_demos/
+Interactive demo server that integrates all PACT components:
+- Serves demo.html interface
+- Provides WebSocket real-time updates  
+- Connects to Creative Synthesis API
+- Manages student sessions and adaptations
 
-This demo showcases:
-- Full PACT system demonstration
-- Multi-student classroom simulation
-- Real-time adaptation showcase  
-- End-to-end learning experience
-
-Integrates all PACT components built in previous commits:
-- Creative Synthesis API (Commit 2)
-- Integration Engine coordination
-- Real-time adaptation
-- Educational content generation
+This creates a complete interactive demo experience.
 """
 
+from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask_socketio import SocketIO, emit, join_room, leave_room
 import asyncio
 import aiohttp
 import json
@@ -27,219 +23,114 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 import uuid
 import logging
+import threading
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 # ============================================================================
-# Demo Configuration
+# Configuration
 # ============================================================================
 
-class DemoConfig:
-    """Demo configuration settings"""
+class Config:
     CREATIVE_SYNTHESIS_API = "http://localhost:8000"
-    DEMO_DURATION_MINUTES = 1
-    STUDENT_COUNT = 6
-    UPDATE_INTERVAL_SECONDS = 10
-    ADAPTATION_PROBABILITY = 0.3
+    DEMO_PORT = 5000
+    SECRET_KEY = 'pact_demo_secret_key'
     
-    # Learning topics for demo
+    # Demo settings
     SUBJECTS = ["Mathematics", "Science", "History"]
-    MATH_TOPICS = ["Fractions", "Multiplication", "Geometry", "Decimals"]
-    SCIENCE_TOPICS = ["Photosynthesis", "Solar System", "Weather", "Animals"]
-    HISTORY_TOPICS = ["Ancient Egypt", "American Revolution", "World War II"]
-
-# ============================================================================
-# Student Models
-# ============================================================================
-
-class DemoStudent:
-    """Represents a student in the demo classroom"""
+    MATH_TOPICS = ["Fractions", "Multiplication", "Geometry"]
     
-    def __init__(self, student_id: str, name: str):
+# ============================================================================
+# Flask App Setup
+# ============================================================================
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = Config.SECRET_KEY
+socketio = SocketIO(app, cors_allowed_origins="*")
+
+# Global state
+active_sessions = {}  # session_id -> student data
+api_client = None
+
+# ============================================================================
+# Student Session Management
+# ============================================================================
+
+class StudentSession:
+    """Manages individual student session state"""
+    
+    def __init__(self, student_id: str, student_data: Dict):
         self.student_id = student_id
-        self.name = name
         self.session_id = f"session_{uuid.uuid4().hex[:8]}"
+        self.name = student_data.get('name', 'Student')
+        self.learning_style = student_data.get('learning_style', 'visual')
+        self.grade_level = student_data.get('grade', '5th Grade')
+        self.difficulty = student_data.get('difficulty_preference', 'medium')
         
-        # Random learning characteristics
-        self.grade_level = random.choice(["3rd", "4th", "5th"])
-        self.learning_style = random.choice(["visual", "auditory", "kinesthetic", "reading"])
-        self.difficulty_preference = random.choice(["easy", "medium", "hard"])
-        
-        # Dynamic metrics (will change during demo)
-        self.engagement_level = random.uniform(0.4, 0.9)
-        self.knowledge_level = random.uniform(0.3, 0.8)
-        self.attention_span = random.randint(10, 25)
-        
-        # Demo state
+        # Session state
         self.current_experience_id = None
-        self.experience_history = []
+        self.engagement_level = 0.5
+        self.knowledge_level = student_data.get('knowledge_level', 0.5)
         self.adaptation_count = 0
-        self.last_interaction = datetime.now()
+        self.start_time = datetime.now()
+        self.last_activity = datetime.now()
         
-    def simulate_engagement_change(self):
-        """Simulate natural engagement fluctuations"""
-        # Random walk with tendency to return to baseline
-        baseline = 0.6
-        change = random.uniform(-0.15, 0.15)
-        drift_to_baseline = (baseline - self.engagement_level) * 0.1
+        # Real-time data
+        self.metrics = {
+            'mouse_movements': 0,
+            'clicks': 0,
+            'time_on_page': 0,
+            'focus_time': 0,
+            'interactions': 0
+        }
         
-        self.engagement_level += change + drift_to_baseline
-        self.engagement_level = max(0.0, min(1.0, self.engagement_level))
-        
-        # Occasionally simulate significant drops or spikes
-        if random.random() < 0.05:  # 5% chance
-            if random.random() < 0.5:
-                self.engagement_level *= 0.7  # Drop
-                return "engagement_drop"
-            else:
-                self.engagement_level = min(1.0, self.engagement_level * 1.3)  # Spike
-                if self.knowledge_level > 0.7:
-                    return "mastery_achieved"
-        
-        # Confusion detection based on low engagement + time
-        time_since_interaction = (datetime.now() - self.last_interaction).seconds
-        if self.engagement_level < 0.4 and time_since_interaction > 120:
-            return "confusion_detected"
-            
-        return None
+        logger.info(f"👨‍🎓 Student session created: {self.name} ({self.student_id})")
     
-    def update_from_adaptation(self, adaptation_response: Dict):
-        """Update student state based on adaptation"""
-        self.adaptation_count += 1
-        adaptation_type = adaptation_response.get("adaptation_type", "")
-        
-        if adaptation_type == "engagement_drop":
-            self.engagement_level = min(1.0, self.engagement_level + 0.2)
-        elif adaptation_type == "confusion_detected":
-            self.engagement_level = min(1.0, self.engagement_level + 0.15)
-            self.knowledge_level = min(1.0, self.knowledge_level + 0.1)
-        elif adaptation_type == "mastery_achieved":
-            self.knowledge_level = min(1.0, self.knowledge_level + 0.1)
-        
-        self.last_interaction = datetime.now()
+    def update_engagement(self, engagement_data: Dict):
+        """Update engagement based on frontend tracking"""
+        self.metrics.update(engagement_data.get('metrics', {}))
+        self.engagement_level = engagement_data.get('engagement_level', self.engagement_level)
+        self.last_activity = datetime.now()
     
-    def get_status_emoji(self):
-        """Get emoji representing current student state"""
-        if self.engagement_level > 0.8:
-            return "🌟"
-        elif self.engagement_level > 0.6:
-            return "😊"
-        elif self.engagement_level > 0.4:
-            return "😐"
-        else:
-            return "😰"
-    
-    def __str__(self):
-        return f"{self.get_status_emoji()} {self.name:12} | Engagement: {self.engagement_level:.2f} | Knowledge: {self.knowledge_level:.2f} | Style: {self.learning_style:12} | Adaptations: {self.adaptation_count}"
+    def to_dict(self):
+        """Convert session to dictionary for JSON serialization"""
+        return {
+            'student_id': self.student_id,
+            'session_id': self.session_id,
+            'name': self.name,
+            'learning_style': self.learning_style,
+            'grade_level': self.grade_level,
+            'current_experience_id': self.current_experience_id,
+            'engagement_level': self.engagement_level,
+            'knowledge_level': self.knowledge_level,
+            'adaptation_count': self.adaptation_count,
+            'metrics': self.metrics,
+            'session_duration': str(datetime.now() - self.start_time).split('.')[0]
+        }
 
 # ============================================================================
-# Classroom Manager
+# API Client
 # ============================================================================
 
-class DemoClassroom:
-    """Manages the simulated classroom environment"""
+class AsyncAPIClient:
+    """Async API client for Creative Synthesis"""
     
     def __init__(self):
-        self.session_id = f"classroom_{uuid.uuid4().hex[:8]}"
-        self.subject = random.choice(DemoConfig.SUBJECTS)
-        self.topic = self._select_topic()
-        self.start_time = datetime.now()
-        
-        # Create diverse student population
-        self.students = self._create_students()
-        
-        # Classroom metrics
-        self.total_experiences_generated = 0
-        self.total_adaptations = 0
-        self.adaptation_events = []
-        
-        logger.info(f"🏫 Classroom created: {self.subject} - {self.topic}")
-        logger.info(f"👥 Students: {len(self.students)}")
-    
-    def _select_topic(self):
-        """Select appropriate topic based on subject"""
-        topic_map = {
-            "Mathematics": DemoConfig.MATH_TOPICS,
-            "Science": DemoConfig.SCIENCE_TOPICS,
-            "History": DemoConfig.HISTORY_TOPICS
-        }
-        return random.choice(topic_map.get(self.subject, ["General Topic"]))
-    
-    def _create_students(self):
-        """Create diverse student population"""
-        names = [
-            "Alex Chen", "Maya Patel", "Jordan Kim", "Emma Rodriguez", 
-            "Sam Wilson", "Aria Thompson"
-        ]
-        
-        students = []
-        for i, name in enumerate(names[:DemoConfig.STUDENT_COUNT]):
-            student = DemoStudent(f"demo_student_{i+1:03d}", name)
-            students.append(student)
-        
-        return students
-    
-    def get_classroom_metrics(self):
-        """Calculate overall classroom metrics"""
-        if not self.students:
-            return {}
-        
-        avg_engagement = sum(s.engagement_level for s in self.students) / len(self.students)
-        avg_knowledge = sum(s.knowledge_level for s in self.students) / len(self.students)
-        
-        struggling_students = sum(1 for s in self.students if s.engagement_level < 0.4)
-        excelling_students = sum(1 for s in self.students if s.engagement_level > 0.8)
-        
-        return {
-            "average_engagement": avg_engagement,
-            "average_knowledge": avg_knowledge,
-            "students_struggling": struggling_students,
-            "students_excelling": excelling_students,
-            "total_adaptations": self.total_adaptations,
-            "session_duration": str(datetime.now() - self.start_time).split('.')[0]
-        }
-    
-    def display_status(self):
-        """Display current classroom status"""
-        metrics = self.get_classroom_metrics()
-        
-        print(f"\n📊 Classroom Status - {self.subject}: {self.topic}")
-        print("=" * 70)
-        print(f"📈 Average Engagement: {metrics['average_engagement']:.2f}")
-        print(f"🧠 Average Knowledge: {metrics['average_knowledge']:.2f}")
-        print(f"😰 Students Struggling: {metrics['students_struggling']}")
-        print(f"🌟 Students Excelling: {metrics['students_excelling']}")
-        print(f"⚡ Total Adaptations: {metrics['total_adaptations']}")
-        print(f"⏰ Session Duration: {metrics['session_duration']}")
-        print()
-        
-        print("👥 Individual Student Status:")
-        print("-" * 70)
-        for student in self.students:
-            print(f"  {student}")
-
-# ============================================================================
-# PACT API Integration
-# ============================================================================
-
-class PACTAPIClient:
-    """Client for interacting with PACT Creative Synthesis API"""
-    
-    def __init__(self, api_url: str):
-        self.api_url = api_url
         self.session = None
+        self.base_url = Config.CREATIVE_SYNTHESIS_API
     
     async def initialize(self):
         """Initialize HTTP session"""
         self.session = aiohttp.ClientSession()
         
-        # Test API connectivity
+        # Test connectivity
         try:
-            async with self.session.get(f"{self.api_url}/health") as response:
+            async with self.session.get(f"{self.base_url}/health") as response:
                 if response.status == 200:
-                    logger.info("✅ Connected to PACT Creative Synthesis API")
+                    logger.info("✅ Connected to Creative Synthesis API")
                     return True
                 else:
                     logger.error(f"❌ API health check failed: {response.status}")
@@ -248,28 +139,24 @@ class PACTAPIClient:
             logger.error(f"❌ Failed to connect to API: {e}")
             return False
     
-    async def cleanup(self):
-        """Cleanup HTTP session"""
-        if self.session:
-            await self.session.close()
-    
-    async def generate_experience(self, student: DemoStudent, subject: str, topic: str) -> Optional[Dict]:
-        """Generate educational experience for student"""
-        learning_context = {
-            "student_id": student.student_id,
-            "session_id": student.session_id,
-            "subject": subject,
-            "grade_level": student.grade_level,
-            "learning_style": student.learning_style,
-            "difficulty_preference": student.difficulty_preference,
-            "interests": [],
-            "current_knowledge_level": student.knowledge_level,
-            "engagement_score": student.engagement_level,
-            "attention_span": student.attention_span
-        }
+    async def generate_experience(self, student_session: StudentSession, subject: str, topic: str):
+        """Generate educational experience"""
+        if not self.session:
+            await self.initialize()
         
-        request_payload = {
-            "context": learning_context,
+        request_data = {
+            "context": {
+                "student_id": student_session.student_id,
+                "session_id": student_session.session_id,
+                "subject": subject,
+                "grade_level": student_session.grade_level,
+                "learning_style": student_session.learning_style,
+                "difficulty_preference": student_session.difficulty,
+                "interests": [],
+                "current_knowledge_level": student_session.knowledge_level,
+                "engagement_score": student_session.engagement_level,
+                "attention_span": 15
+            },
             "content_type": "lesson",
             "topic": topic,
             "duration_minutes": 15,
@@ -278,264 +165,344 @@ class PACTAPIClient:
         }
         
         try:
-            async with self.session.post(
-                f"{self.api_url}/generate",
-                json=request_payload
-            ) as response:
+            async with self.session.post(f"{self.base_url}/generate", json=request_data) as response:
                 if response.status == 200:
                     experience = await response.json()
-                    student.current_experience_id = experience["experience_id"]
-                    student.experience_history.append(experience)
-                    logger.info(f"📚 Generated experience for {student.name}: {experience['experience_id']}")
+                    student_session.current_experience_id = experience["experience_id"]
                     return experience
                 else:
-                    logger.error(f"❌ Failed to generate experience for {student.name}: {response.status}")
+                    logger.error(f"❌ Experience generation failed: {response.status}")
                     return None
         except Exception as e:
-            logger.error(f"❌ API error generating experience: {e}")
+            logger.error(f"❌ API error: {e}")
             return None
     
-    async def trigger_adaptation(self, student: DemoStudent, trigger_type: str, confidence: float = 0.8) -> Optional[Dict]:
-        """Trigger adaptation for student's current experience"""
-        if not student.current_experience_id:
+    async def trigger_adaptation(self, student_session: StudentSession, trigger_type: str, confidence: float = 0.8):
+        """Trigger adaptation for student experience"""
+        if not student_session.current_experience_id:
             return None
         
-        adaptation_trigger = {
+        trigger_data = {
             "trigger_type": trigger_type,
             "confidence": confidence,
             "context": {
-                "current_engagement": student.engagement_level,
-                "current_knowledge": student.knowledge_level,
-                "learning_style": student.learning_style
+                "current_engagement": student_session.engagement_level,
+                "learning_style": student_session.learning_style
             },
             "timestamp": datetime.now().isoformat()
         }
         
         try:
             async with self.session.post(
-                f"{self.api_url}/adapt/{student.current_experience_id}",
-                json=adaptation_trigger
+                f"{self.base_url}/adapt/{student_session.current_experience_id}", 
+                json=trigger_data
             ) as response:
                 if response.status == 200:
                     adaptation = await response.json()
-                    logger.info(f"⚡ Adaptation triggered for {student.name}: {adaptation['reasoning']}")
+                    student_session.adaptation_count += 1
                     return adaptation
                 else:
-                    logger.error(f"❌ Failed to trigger adaptation for {student.name}: {response.status}")
+                    logger.error(f"❌ Adaptation failed: {response.status}")
                     return None
         except Exception as e:
-            logger.error(f"❌ API error triggering adaptation: {e}")
+            logger.error(f"❌ Adaptation error: {e}")
             return None
+    
+    async def cleanup(self):
+        """Cleanup resources"""
+        if self.session:
+            await self.session.close()
 
 # ============================================================================
-# Demo Orchestrator
+# Web Routes
 # ============================================================================
 
-class PACTDemoOrchestrator:
-    """Main demo orchestrator - coordinates all components"""
-    
-    def __init__(self):
-        self.classroom = DemoClassroom()
-        self.api_client = PACTAPIClient(DemoConfig.CREATIVE_SYNTHESIS_API)
-        self.running = False
-        self.cycle_count = 0
-    
-    async def initialize(self):
-        """Initialize demo components"""
-        logger.info("🚀 Initializing PACT Integration Demo...")
+@app.route('/')
+def index():
+    """Serve the main demo interface"""
+    return send_from_directory('.', 'demo.html')
+
+@app.route('/engagement_tracker.js')
+def engagement_tracker():
+    """Serve the engagement tracker JavaScript"""
+    return send_from_directory('.', 'engagement_tracker.js')
+
+@app.route('/api/health')
+def health():
+    """API health check"""
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': datetime.now().isoformat(),
+        'active_sessions': len(active_sessions),
+        'api_connected': api_client is not None
+    })
+
+@app.route('/api/students', methods=['POST'])
+def create_student_session():
+    """Create new student session"""
+    try:
+        student_data = request.json
+        student_id = student_data.get('student_id') or f"student_{uuid.uuid4().hex[:6]}"
         
-        # Initialize API client
-        if not await self.api_client.initialize():
-            logger.error("❌ Failed to initialize API client")
-            return False
+        # Create session
+        session = StudentSession(student_id, student_data)
+        active_sessions[session.session_id] = session
         
-        # Generate initial experiences for all students
-        logger.info("📚 Generating initial learning experiences...")
-        for student in self.classroom.students:
-            experience = await self.api_client.generate_experience(
-                student, self.classroom.subject, self.classroom.topic
+        logger.info(f"📝 Created session for {session.name}")
+        
+        return jsonify({
+            'success': True,
+            'session': session.to_dict()
+        })
+    except Exception as e:
+        logger.error(f"❌ Failed to create session: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/experiences', methods=['POST'])
+def generate_experience():
+    """Generate educational experience for student"""
+    try:
+        data = request.json
+        session_id = data.get('session_id')
+        subject = data.get('subject', 'Mathematics')
+        topic = data.get('topic', 'Fractions')
+        
+        if session_id not in active_sessions:
+            return jsonify({'success': False, 'error': 'Session not found'}), 404
+        
+        student_session = active_sessions[session_id]
+        
+        # Generate experience asynchronously
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        experience = loop.run_until_complete(
+            api_client.generate_experience(student_session, subject, topic)
+        )
+        loop.close()
+        
+        if experience:
+            # Emit to connected clients
+            socketio.emit('experience_generated', {
+                'student_id': student_session.student_id,
+                'experience': experience
+            }, room=session_id)
+            
+            return jsonify({'success': True, 'experience': experience})
+        else:
+            return jsonify({'success': False, 'error': 'Failed to generate experience'}), 500
+            
+    except Exception as e:
+        logger.error(f"❌ Experience generation error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/adaptations', methods=['POST'])
+def trigger_adaptation():
+    """Trigger adaptation for student"""
+    try:
+        data = request.json
+        session_id = data.get('session_id')
+        trigger_type = data.get('trigger_type')
+        confidence = data.get('confidence', 0.8)
+        
+        if session_id not in active_sessions:
+            return jsonify({'success': False, 'error': 'Session not found'}), 404
+        
+        student_session = active_sessions[session_id]
+        
+        # Trigger adaptation
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        adaptation = loop.run_until_complete(
+            api_client.trigger_adaptation(student_session, trigger_type, confidence)
+        )
+        loop.close()
+        
+        if adaptation:
+            # Emit to connected clients
+            socketio.emit('adaptation_triggered', {
+                'student_id': student_session.student_id,
+                'adaptation': adaptation,
+                'trigger_type': trigger_type
+            }, room=session_id)
+            
+            logger.info(f"⚡ Adaptation triggered for {student_session.name}: {trigger_type}")
+            
+            return jsonify({'success': True, 'adaptation': adaptation})
+        else:
+            return jsonify({'success': False, 'error': 'Failed to trigger adaptation'}), 500
+            
+    except Exception as e:
+        logger.error(f"❌ Adaptation error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/sessions/<session_id>')
+def get_session(session_id):
+    """Get student session data"""
+    if session_id in active_sessions:
+        return jsonify(active_sessions[session_id].to_dict())
+    else:
+        return jsonify({'error': 'Session not found'}), 404
+
+@app.route('/api/dashboard')
+def get_dashboard_data():
+    """Get dashboard overview data"""
+    sessions = [session.to_dict() for session in active_sessions.values()]
+    
+    total_adaptations = sum(session.adaptation_count for session in active_sessions.values())
+    avg_engagement = sum(session.engagement_level for session in active_sessions.values()) / len(active_sessions) if active_sessions else 0
+    
+    return jsonify({
+        'total_sessions': len(active_sessions),
+        'total_adaptations': total_adaptations,
+        'average_engagement': avg_engagement,
+        'sessions': sessions
+    })
+
+# ============================================================================
+# WebSocket Events
+# ============================================================================
+
+@socketio.on('connect')
+def handle_connect():
+    """Handle client connection"""
+    logger.info(f"🔗 Client connected: {request.sid}")
+    emit('connected', {'status': 'Connected to PACT Demo Server'})
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    """Handle client disconnection"""
+    logger.info(f"🔌 Client disconnected: {request.sid}")
+
+@socketio.on('join_session')
+def handle_join_session(data):
+    """Join student session room"""
+    session_id = data.get('session_id')
+    if session_id and session_id in active_sessions:
+        join_room(session_id)
+        student_session = active_sessions[session_id]
+        logger.info(f"👥 {student_session.name} joined session room: {session_id}")
+        emit('joined_session', {'session_id': session_id, 'student_name': student_session.name})
+
+@socketio.on('engagement_update')
+def handle_engagement_update(data):
+    """Handle real-time engagement updates from frontend"""
+    session_id = data.get('session_id')
+    if session_id and session_id in active_sessions:
+        student_session = active_sessions[session_id]
+        student_session.update_engagement(data)
+        
+        # Check for adaptation triggers
+        engagement_level = data.get('engagement_level', 0.5)
+        if engagement_level < 0.3:
+            # Trigger low engagement adaptation
+            socketio.start_background_task(trigger_background_adaptation, 
+                                         session_id, 'engagement_drop', 0.9)
+        elif engagement_level > 0.9:
+            # Trigger mastery adaptation  
+            socketio.start_background_task(trigger_background_adaptation,
+                                         session_id, 'mastery_achieved', 0.8)
+
+def trigger_background_adaptation(session_id, trigger_type, confidence):
+    """Background task to trigger adaptation"""
+    if session_id in active_sessions:
+        student_session = active_sessions[session_id]
+        
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        try:
+            adaptation = loop.run_until_complete(
+                api_client.trigger_adaptation(student_session, trigger_type, confidence)
             )
-            if experience:
-                self.classroom.total_experiences_generated += 1
-        
-        logger.info(f"✅ Demo initialized with {self.classroom.total_experiences_generated} experiences")
-        return True
-    
-    async def run_demo(self, duration_minutes: int = DemoConfig.DEMO_DURATION_MINUTES):
-        """Run the complete demo simulation"""
-        self.running = True
-        end_time = datetime.now() + timedelta(minutes=duration_minutes)
-        
-        logger.info(f"🎬 Starting {duration_minutes}-minute PACT demo simulation...")
-        logger.info(f"📖 Subject: {self.classroom.subject} - Topic: {self.classroom.topic}")
-        
-        # Initial status display
-        self.classroom.display_status()
-        
-        while self.running and datetime.now() < end_time and self.cycle_count < 10:
-            self.cycle_count += 1
             
-            print(f"\n🔄 Demo Cycle {self.cycle_count}")
-            print("-" * 40)
-            
-            # Process each student
-            adaptations_this_cycle = 0
-            for student in self.classroom.students:
-                # Simulate engagement changes
-                trigger_type = student.simulate_engagement_change()
+            if adaptation:
+                socketio.emit('adaptation_triggered', {
+                    'student_id': student_session.student_id,
+                    'adaptation': adaptation,
+                    'trigger_type': trigger_type
+                }, room=session_id)
                 
-                # Trigger adaptation if needed
-                if trigger_type and random.random() < DemoConfig.ADAPTATION_PROBABILITY:
-                    adaptation = await self.api_client.trigger_adaptation(student, trigger_type)
-                    
-                    if adaptation:
-                        student.update_from_adaptation(adaptation)
-                        self.classroom.total_adaptations += 1
-                        adaptations_this_cycle += 1
-                        
-                        # Log adaptation event
-                        event = {
-                            "cycle": self.cycle_count,
-                            "student": student.name,
-                            "trigger": trigger_type,
-                            "reasoning": adaptation.get("reasoning", ""),
-                            "timestamp": datetime.now().isoformat()
-                        }
-                        self.classroom.adaptation_events.append(event)
-                        
-                        print(f"  ⚡ {student.name}: {trigger_type} → {adaptation.get('reasoning', 'Adapted')}")
-            
-            # Display cycle summary
-            if adaptations_this_cycle > 0:
-                print(f"  📊 Adaptations this cycle: {adaptations_this_cycle}")
-            else:
-                print("  📊 No adaptations needed this cycle")
-            
-            # Update classroom status every few cycles
-            if self.cycle_count % 3 == 0:
-                self.classroom.display_status()
-            
-            # Wait before next cycle
-            await asyncio.sleep(DemoConfig.UPDATE_INTERVAL_SECONDS)
-        
-        # Demo completed
-        reason = "time limit" if datetime.now() >= end_time else "cycle limit"
-        logger.info(f"🏁 Demo simulation completed! (Stopped due to {reason})")
-        await self.generate_final_report()
-    
-    async def generate_final_report(self):
-        """Generate comprehensive final report"""
-        print("\n" + "=" * 80)
-        print("📋 PACT INTEGRATION DEMO - FINAL REPORT")
-        print("=" * 80)
-        
-        metrics = self.classroom.get_classroom_metrics()
-        
-        print(f"🏫 Classroom Session: {self.classroom.session_id}")
-        print(f"📚 Subject: {self.classroom.subject} - {self.classroom.topic}")
-        print(f"⏰ Total Duration: {metrics['session_duration']}")
-        print(f"🔄 Demo Cycles: {self.cycle_count}")
-        
-        print(f"\n📊 FINAL METRICS:")
-        print(f"  📈 Final Average Engagement: {metrics['average_engagement']:.2f}")
-        print(f"  🧠 Final Average Knowledge: {metrics['average_knowledge']:.2f}")
-        print(f"  📚 Experiences Generated: {self.classroom.total_experiences_generated}")
-        print(f"  ⚡ Total Adaptations: {self.classroom.total_adaptations}")
-        print(f"  😰 Students Struggling: {metrics['students_struggling']}")
-        print(f"  🌟 Students Excelling: {metrics['students_excelling']}")
-        
-        print(f"\n👨‍🎓 INDIVIDUAL STUDENT OUTCOMES:")
-        for student in self.classroom.students:
-            initial_knowledge = 0.5  # Assumed baseline
-            knowledge_gain = student.knowledge_level - initial_knowledge
-            print(f"  {student.name:15} | Final Engagement: {student.engagement_level:.2f} | Knowledge Gain: {knowledge_gain:+.2f} | Adaptations: {student.adaptation_count}")
-        
-        if self.classroom.adaptation_events:
-            print(f"\n⚡ RECENT ADAPTATION EVENTS:")
-            for event in self.classroom.adaptation_events[-10:]:  # Last 10 events
-                timestamp = datetime.fromisoformat(event['timestamp']).strftime('%H:%M:%S')
-                print(f"  {timestamp} | {event['student']:12} | {event['trigger']:20} | {event['reasoning']}")
-        
-        print("\n🎯 DEMO INSIGHTS:")
-        print("  ✅ Real-time adaptation successfully triggered based on engagement")
-        print("  ✅ Personalized learning experiences generated for diverse students")
-        print("  ✅ Classroom-wide analytics provided actionable insights")
-        print("  ✅ End-to-end PACT system integration demonstrated")
-        
-        print("=" * 80)
-    
-    async def stop_demo(self):
-        """Stop the demo gracefully"""
-        self.running = False
-        await self.api_client.cleanup()
-        logger.info("🛑 Demo stopped gracefully")
+                logger.info(f"⚡ Background adaptation: {student_session.name} - {trigger_type}")
+        except Exception as e:
+            logger.error(f"❌ Background adaptation failed: {e}")
+        finally:
+            loop.close()
 
 # ============================================================================
-# Main Demo Entry Point
+# Background Tasks
 # ============================================================================
 
-async def main():
-    """Main demo entry point"""
-    print("🎓 PACT Integration Demo Starting...")
-    print("=" * 50)
-    print("This demo showcases:")
-    print("✅ Full PACT system demonstration")
-    print("✅ Multi-student classroom simulation")
-    print("✅ Real-time adaptation showcase")
-    print("✅ End-to-end learning experience")
+def cleanup_inactive_sessions():
+    """Clean up inactive sessions periodically"""
+    while True:
+        try:
+            current_time = datetime.now()
+            inactive_sessions = []
+            
+            for session_id, session in active_sessions.items():
+                if (current_time - session.last_activity).seconds > 1800:  # 30 minutes
+                    inactive_sessions.append(session_id)
+            
+            for session_id in inactive_sessions:
+                logger.info(f"🧹 Cleaning up inactive session: {active_sessions[session_id].name}")
+                del active_sessions[session_id]
+                
+            time.sleep(300)  # Check every 5 minutes
+        except Exception as e:
+            logger.error(f"❌ Cleanup task error: {e}")
+            time.sleep(60)
+
+# ============================================================================
+# Application Startup
+# ============================================================================
+
+async def initialize_api_client():
+    """Initialize the API client"""
+    global api_client
+    api_client = AsyncAPIClient()
+    success = await api_client.initialize()
+    return success
+
+def run_initialization():
+    """Run async initialization in thread"""
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    success = loop.run_until_complete(initialize_api_client())
+    loop.close()
+    return success
+
+if __name__ == '__main__':
+    print("🚀 PACT Integration Demo Server Starting...")
     print("=" * 50)
     
-    # Create and initialize demo
-    orchestrator = PACTDemoOrchestrator()
+    # Initialize API client
+    print("🔗 Connecting to Creative Synthesis API...")
+    if run_initialization():
+        print("✅ API connection successful")
+    else:
+        print("❌ API connection failed - some features may not work")
+        print("   Make sure Creative Synthesis API is running on localhost:8000")
+    
+    # Start cleanup task
+    cleanup_thread = threading.Thread(target=cleanup_inactive_sessions, daemon=True)
+    cleanup_thread.start()
+    
+    print(f"\n🌐 Demo server starting on http://localhost:{Config.DEMO_PORT}")
+    print("📱 Open demo.html in your browser to begin")
+    print("📊 Dashboard available at /api/dashboard")
+    print("\nPress Ctrl+C to stop")
+    print("=" * 50)
     
     try:
-        # Initialize demo
-        if not await orchestrator.initialize():
-            print("❌ Failed to initialize demo. Make sure the Creative Synthesis API is running!")
-            print("   Start it with: python creative_synthesis_api.py")
-            return
-        
-        # Run demo
-        await orchestrator.run_demo()
-        
+        socketio.run(app, host='0.0.0.0', port=Config.DEMO_PORT, debug=False)
     except KeyboardInterrupt:
-        print("\n⏹️  Demo interrupted by user")
-    except Exception as e:
-        logger.error(f"❌ Demo error: {e}")
+        print("\n👋 Demo server stopped")
     finally:
-        await orchestrator.stop_demo()
-
-def print_startup_info():
-    """Print demo startup information"""
-    print(f"""
-🎓 PACT Complete System Integration Demo
-======================================
-
-Prerequisites:
-1. Creative Synthesis API running on {DemoConfig.CREATIVE_SYNTHESIS_API}
-   → cd pact-hx/integration/ && python creative_synthesis_api.py
-
-Demo Features:
-• {DemoConfig.STUDENT_COUNT} simulated students with diverse learning profiles
-• Real-time engagement tracking and adaptation
-• Automatic content personalization
-• Comprehensive analytics and reporting
-• {DemoConfig.DEMO_DURATION_MINUTES}-minute simulation with {DemoConfig.UPDATE_INTERVAL_SECONDS}-second cycles
-
-Starting in 3 seconds...
-    """)
-    time.sleep(3)
-
-if __name__ == "__main__":
-    print_startup_info()
-    
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        print("\n👋 Demo stopped by user")
-    except Exception as e:
-        logger.error(f"❌ Failed to start demo: {e}")
-        print("\n🔧 Troubleshooting:")
-        print("1. Ensure Creative Synthesis API is running: python creative_synthesis_api.py")
-        print("2. Check API connectivity: curl http://localhost:8000/health")
-        print("3. Verify all dependencies are installed: pip install aiohttp")
+        # Cleanup
+        if api_client:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(api_client.cleanup())
+            loop.close()

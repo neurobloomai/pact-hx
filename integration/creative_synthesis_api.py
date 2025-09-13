@@ -23,27 +23,11 @@ import uuid
 from datetime import datetime
 from enum import Enum
 import logging
+from contextlib import asynccontextmanager
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-# Initialize FastAPI app with lifespan
-app = FastAPI(
-    title="PACT Creative Synthesis API",
-    description="Real-time educational experience generation and adaptation",
-    version="1.0.0",
-    lifespan=lifespan
-)
-
-# CORS middleware for frontend integration
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # In production, specify exact origins
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # ============================================================================
 # Data Models
@@ -404,6 +388,51 @@ synthesis_engine = CreativeSynthesisEngine()
 connection_manager = ConnectionManager()
 
 # ============================================================================
+# Lifespan Events
+# ============================================================================
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Handle startup and shutdown events"""
+    # Startup
+    logger.info("🚀 PACT Creative Synthesis API starting up...")
+    logger.info("✅ Creative Synthesis Engine initialized")
+    logger.info("✅ WebSocket Connection Manager ready")
+    logger.info("🌐 API ready for educational experience generation")
+    
+    yield
+    
+    # Shutdown
+    logger.info("🛑 PACT Creative Synthesis API shutting down...")
+    # Close all WebSocket connections
+    for connection_id in list(connection_manager.active_connections.keys()):
+        parts = connection_id.split('_', 1)
+        if len(parts) == 2:
+            student_id = parts[0]
+            connection_manager.disconnect(student_id)
+    logger.info("✅ Cleanup completed")
+
+# ============================================================================
+# Initialize FastAPI App
+# ============================================================================
+
+app = FastAPI(
+    title="PACT Creative Synthesis API",
+    description="Real-time educational experience generation and adaptation",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+# CORS middleware for frontend integration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify exact origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ============================================================================
 # REST API Endpoints
 # ============================================================================
 
@@ -559,33 +588,13 @@ async def websocket_endpoint(websocket: WebSocket, student_id: str, session_id: 
         connection_manager.disconnect(student_id)
 
 # ============================================================================
-# Startup Events
+# Main Application Entry Point
 # ============================================================================
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize the API on startup"""
-    logger.info("🚀 PACT Creative Synthesis API starting up...")
-    logger.info("✅ Creative Synthesis Engine initialized")
-    logger.info("✅ WebSocket Connection Manager ready")
-    logger.info("🌐 API ready for educational experience generation")
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on shutdown"""
-    logger.info("🛑 PACT Creative Synthesis API shutting down...")
-    # Close all WebSocket connections
-    for connection_id in list(connection_manager.active_connections.keys()):
-        parts = connection_id.split('_', 1)
-        if len(parts) == 2:
-            student_id = parts[0]
-            connection_manager.disconnect(student_id)
-    logger.info("✅ Cleanup completed")
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
-        "main:app", 
+        "creative_synthesis_api:app", 
         host="0.0.0.0", 
         port=8000, 
         reload=True,

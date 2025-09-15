@@ -55,6 +55,58 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 def demo_home():
     return "<h1>🎓 PACT Demo Server is Running!</h1><p>Server is working. Open the frontend files directly in your browser.</p>"
 
+@app.route('/student')
+def student_interface():
+    """Student interface"""
+    return '''
+    <html>
+        <head><title>PACT Student Interface</title></head>
+        <body style="font-family: Arial, sans-serif; margin: 40px; background: #f5f7fa; text-align: center;">
+            <div style="max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px;">
+                <h1>👨‍🎓 PACT Student Interface</h1>
+                <div style="background: #fff3cd; padding: 20px; border-radius: 6px; margin: 20px 0;">
+                    <strong>📁 File Location:</strong><br>
+                    The student interface should be at:<br>
+                    <code>frontend/student_interface/demo.html</code>
+                </div>
+                <p><strong>🚀 Quick Start:</strong></p>
+                <ol style="text-align: left;">
+                    <li>Navigate to the <code>frontend/student_interface/</code> folder</li>
+                    <li>Open <code>demo.html</code> in your browser</li>
+                    <li>Or run: <code>python -m http.server 8080</code> in the frontend folder</li>
+                </ol>
+                <p><a href="/">← Back to Demo Home</a></p>
+            </div>
+        </body>
+    </html>
+    '''
+
+@app.route('/teacher')
+def teacher_interface():
+    """Teacher dashboard"""
+    return '''
+    <html>
+        <head><title>PACT Teacher Dashboard</title></head>
+        <body style="font-family: Arial, sans-serif; margin: 40px; background: #f5f7fa; text-align: center;">
+            <div style="max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px;">
+                <h1>👩‍🏫 PACT Teacher Dashboard</h1>
+                <div style="background: #f8d7da; padding: 20px; border-radius: 6px; margin: 20px 0;">
+                    <strong>📁 File Location:</strong><br>
+                    The teacher dashboard should be at:<br>
+                    <code>frontend/teacher_dashboard.html</code>
+                </div>
+                <p><strong>🚀 Quick Start:</strong></p>
+                <ol style="text-align: left;">
+                    <li>Navigate to the <code>frontend/</code> folder</li>
+                    <li>Open <code>teacher_dashboard.html</code> in your browser</li>
+                    <li>Or run: <code>python -m http.server 8080</code> in the frontend folder</li>
+                </ol>
+                <p><a href="/">← Back to Demo Home</a></p>
+            </div>
+        </body>
+    </html>
+    '''
+
 # Global state
 active_sessions = {}  # session_id -> student data
 api_client = None

@@ -473,6 +473,116 @@ def run_initialization():
     loop.close()
     return success
 
+# ============================================================================
+# Demo Templates (Fallback if HTML files not found)
+# ============================================================================
+
+DEMO_INDEX_TEMPLATE = '''
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PACT Integration Demo</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f7fa; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; margin-bottom: 20px; }
+        .demo-links { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 30px 0; }
+        .demo-card { background: #3498db; color: white; padding: 30px; border-radius: 8px; text-decoration: none; text-align: center; transition: transform 0.2s; }
+        .demo-card:hover { transform: translateY(-2px); background: #2980b9; }
+        .demo-card h3 { margin: 0 0 10px 0; }
+        .status { background: #e8f5e8; padding: 15px; border-radius: 6px; border-left: 4px solid #27ae60; margin: 20px 0; }
+        .api-links { margin-top: 30px; }
+        .api-links a { display: inline-block; margin: 5px 10px 5px 0; padding: 8px 16px; background: #ecf0f1; border-radius: 4px; text-decoration: none; color: #2c3e50; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎓 PACT Integration Demo</h1>
+        <p>Welcome to the PACT educational system demonstration. Choose your interface:</p>
+        
+        <div class="demo-links">
+            <a href="/student" class="demo-card">
+                <h3>👨‍🎓 Student Interface</h3>
+                <p>Interactive learning experience with real-time adaptation</p>
+            </a>
+            
+            <a href="/teacher" class="demo-card">
+                <h3>👩‍🏫 Teacher Dashboard</h3>
+                <p>Classroom monitoring and analytics</p>
+            </a>
+        </div>
+        
+        <div class="status">
+            <strong>✅ System Status:</strong> All components running and connected
+        </div>
+        
+        <div class="api-links">
+            <strong>API Endpoints:</strong>
+            <a href="/api/health">Health Check</a>
+            <a href="/api/dashboard">Dashboard Data</a>
+            <a href="/api/sessions">Active Sessions</a>
+        </div>
+        
+        <hr style="margin: 30px 0;">
+        
+        <h2>🚀 Quick Demo Steps:</h2>
+        <ol>
+            <li><strong>Student Experience:</strong> Click "Student Interface" → Select profile → Start learning → Watch real-time adaptation</li>
+            <li><strong>Teacher Experience:</strong> Click "Teacher Dashboard" → Monitor students → Use classroom controls</li>
+            <li><strong>Integration:</strong> Open both interfaces to see real-time synchronization</li>
+        </ol>
+        
+        <p><small>💡 <strong>Tip:</strong> Open both interfaces in separate browser tabs to see the complete integration in action!</small></p>
+    </div>
+</body>
+</html>
+'''
+
+TEACHER_FALLBACK_TEMPLATE = '''
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PACT Teacher Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f7fa; text-align: center; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; }
+        .error { background: #f8d7da; color: #721c24; padding: 20px; border-radius: 6px; margin: 20px 0; }
+        .instructions { background: #e8f4f8; padding: 20px; border-radius: 6px; margin: 20px 0; text-align: left; }
+        a { color: #3498db; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>👩‍🏫 PACT Teacher Dashboard</h1>
+        
+        <div class="error">
+            <strong>⚠️ Teacher Dashboard Not Found</strong><br>
+            The teacher dashboard HTML file is not available at the expected location.
+        </div>
+        
+        <div class="instructions">
+            <strong>📁 Expected File Location:</strong><br>
+            <code>frontend/teacher_dashboard.html</code>
+            
+            <p><strong>🔧 To Fix This:</strong></p>
+            <ol>
+                <li>Ensure the <code>frontend/</code> folder exists</li>
+                <li>Create or copy the <code>teacher_dashboard.html</code> file</li>
+                <li>Refresh this page</li>
+            </ol>
+        </div>
+        
+        <p><a href="/">← Back to Demo Home</a></p>
+    </div>
+</body>
+</html>
+'''
+
 if __name__ == '__main__':
     print("🚀 PACT Integration Demo Server Starting...")
     print("=" * 50)

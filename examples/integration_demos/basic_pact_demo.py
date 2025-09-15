@@ -57,55 +57,50 @@ def demo_home():
 
 @app.route('/student')
 def student_interface():
-    """Student interface"""
-    return '''
-    <html>
-        <head><title>PACT Student Interface</title></head>
-        <body style="font-family: Arial, sans-serif; margin: 40px; background: #f5f7fa; text-align: center;">
-            <div style="max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px;">
-                <h1>👨‍🎓 PACT Student Interface</h1>
-                <div style="background: #fff3cd; padding: 20px; border-radius: 6px; margin: 20px 0;">
-                    <strong>📁 File Location:</strong><br>
-                    The student interface should be at:<br>
-                    <code>frontend/student_interface/demo.html</code>
-                </div>
-                <p><strong>🚀 Quick Start:</strong></p>
-                <ol style="text-align: left;">
-                    <li>Navigate to the <code>frontend/student_interface/</code> folder</li>
-                    <li>Open <code>demo.html</code> in your browser</li>
-                    <li>Or run: <code>python -m http.server 8080</code> in the frontend folder</li>
-                </ol>
-                <p><a href="/">← Back to Demo Home</a></p>
-            </div>
-        </body>
-    </html>
-    '''
+    """Serve the actual student interface"""
+    try:
+        # Path to the student interface file
+        file_path = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'student_interface', 'demo.html')
+        
+        if os.path.exists(file_path):
+            with open(file_path, 'r', encoding='utf-8') as f:
+                return f.read()
+        else:
+            return f'''
+            <h1>❌ Student Interface Not Found</h1>
+            <p>Looking for file at: <code>{file_path}</code></p>
+            <p>Please ensure the file exists and try again.</p>
+            <p><a href="/">← Back</a></p>
+            '''
+    except Exception as e:
+        return f"<h1>Error loading student interface:</h1><p>{str(e)}</p>"
 
 @app.route('/teacher')
 def teacher_interface():
-    """Teacher dashboard"""
-    return '''
-    <html>
-        <head><title>PACT Teacher Dashboard</title></head>
-        <body style="font-family: Arial, sans-serif; margin: 40px; background: #f5f7fa; text-align: center;">
-            <div style="max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px;">
-                <h1>👩‍🏫 PACT Teacher Dashboard</h1>
-                <div style="background: #f8d7da; padding: 20px; border-radius: 6px; margin: 20px 0;">
-                    <strong>📁 File Location:</strong><br>
-                    The teacher dashboard should be at:<br>
-                    <code>frontend/teacher_dashboard.html</code>
-                </div>
-                <p><strong>🚀 Quick Start:</strong></p>
-                <ol style="text-align: left;">
-                    <li>Navigate to the <code>frontend/</code> folder</li>
-                    <li>Open <code>teacher_dashboard.html</code> in your browser</li>
-                    <li>Or run: <code>python -m http.server 8080</code> in the frontend folder</li>
-                </ol>
-                <p><a href="/">← Back to Demo Home</a></p>
-            </div>
-        </body>
-    </html>
-    '''
+    """Serve the actual teacher dashboard"""
+    try:
+        # Path to the teacher dashboard file
+        file_path = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'teacher_dashboard.html')
+        
+        if os.path.exists(file_path):
+            with open(file_path, 'r', encoding='utf-8') as f:
+                return f.read()
+        else:
+            return f'''
+            <h1>❌ Teacher Dashboard Not Found</h1>
+            <p>Looking for file at: <code>{file_path}</code></p>
+            <p>Please ensure the file exists and try again.</p>
+            <p><a href="/">← Back</a></p>
+            '''
+    except Exception as e:
+        return f"<h1>Error loading teacher dashboard:</h1><p>{str(e)}</p>"
+
+# Add support for static assets (CSS, JS, images)
+@app.route('/frontend/<path:filename>')
+def serve_frontend_assets(filename):
+    """Serve frontend static assets"""
+    frontend_dir = os.path.join(os.path.dirname(__file__), '..', 'frontend')
+    return send_from_directory(frontend_dir, filename)
 
 # Global state
 active_sessions = {}  # session_id -> student data

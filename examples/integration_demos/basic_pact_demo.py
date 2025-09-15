@@ -60,7 +60,7 @@ def student_interface():
     """Serve the actual student interface"""
     try:
         # Path to the student interface file
-        file_path = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'student_interface', 'demo.html')
+        file_path = os.path.join(os.path.dirname(__file__), '../..', 'frontend', 'student_interface', 'demo.html')
         
         if os.path.exists(file_path):
             with open(file_path, 'r', encoding='utf-8') as f:
@@ -80,7 +80,7 @@ def teacher_interface():
     """Serve the actual teacher dashboard"""
     try:
         # Path to the teacher dashboard file
-        file_path = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'teacher_dashboard.html')
+        file_path = os.path.join(os.path.dirname(__file__), '../..', 'frontend', 'teacher_dashboard.html')
         
         if os.path.exists(file_path):
             with open(file_path, 'r', encoding='utf-8') as f:

@@ -51,6 +51,10 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = Config.SECRET_KEY
 socketio = SocketIO(app, cors_allowed_origins="*")
 
+@app.route('/')
+def index():
+    return "<h1>🎓 PACT Demo Server is Running!</h1><p>Server is working. Open the frontend files directly in your browser.</p>"
+
 # Global state
 active_sessions = {}  # session_id -> student data
 api_client = None

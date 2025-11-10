@@ -11,6 +11,7 @@
 ## The Problem
 
 Your LangChain agent forgets things. Important things.
+
 ```python
 # Standard LangChain memory
 conversation.memory.save_context(
@@ -31,6 +32,7 @@ conversation.memory.load_memory_variables({})
 ## The Solution
 
 PACT Memory tracks **what matters** - emotions, context, and relationships.
+
 ```python
 from pact_langchain import PACTMemory
 
@@ -50,6 +52,7 @@ memory.load_memory_variables({})
 ---
 
 ## Installation
+
 ```bash
 pip install pact-langchain
 ```
@@ -57,13 +60,14 @@ pip install pact-langchain
 **Requirements:**
 - Python 3.8+
 - LangChain 0.1.0+
-- PACT API key (get one at [pact-memory.com](https://pact-memory.com))
+- PACT API key (get one at [neurobloom.ai](https://neurobloom.ai))
 
 ---
 
 ## Quick Start
 
 ### Basic Usage (Drop-in Replacement)
+
 ```python
 from langchain.llms import OpenAI
 from langchain.chains import ConversationChain
@@ -91,6 +95,7 @@ conversation.predict(input="This is really frustrating!")
 ```
 
 ### With Emotional Context
+
 ```python
 memory = PACTMemory(
     api_key="sk_test_...",
@@ -113,8 +118,8 @@ print(state)
 #   "key_emotions": ["joy", "pride"]
 # }
 ```
-
 ### With Context Consolidation
+
 ```python
 memory = PACTMemory(
     api_key="sk_test_...",
@@ -139,6 +144,7 @@ print(summary["consolidated_summary"])
 ## Side-by-Side Comparison
 
 ### Standard LangChain Memory
+
 ```python
 from langchain.memory import ConversationBufferMemory
 
@@ -167,6 +173,7 @@ print(context["history"])
 ```
 
 ### PACT Memory
+
 ```python
 from pact_langchain import PACTMemory
 
@@ -217,6 +224,7 @@ print(context["context_summary"])
 ## Advanced Usage
 
 ### Custom Configuration
+
 ```python
 memory = PACTMemory(
     api_key="sk_test_...",
@@ -231,11 +239,12 @@ memory = PACTMemory(
     max_token_limit=2000,        # Max tokens in context
     
     # API settings
-    api_url="https://api.pact-memory.com/v1"  # Custom endpoint
+    api_url="https://api.neurobloom.ai/pact/v1"  # Custom endpoint
 )
 ```
 
 ### Accessing Memory Graph
+
 ```python
 # Get full memory graph structure
 graph = memory.get_context_graph()
@@ -255,6 +264,7 @@ graph = memory.get_context_graph()
 ```
 
 ### Manual Priority Control
+
 ```python
 # Mark important topics
 memory.set_context_priority(topic="quarterly_goals", priority="high")
@@ -267,6 +277,7 @@ memory.set_context_priority(topic="lunch_preferences", priority="low")
 ```
 
 ### Async Support
+
 ```python
 from pact_langchain import AsyncPACTMemory
 
@@ -280,10 +291,10 @@ async def chat():
         {"output": "Hi there!"}
     )
 ```
-
 ---
 
 ## Real-World Example: Customer Support Bot
+
 ```python
 from langchain.llms import OpenAI
 from langchain.chains import ConversationChain
@@ -363,7 +374,7 @@ print(context["context_summary"])
 - 99.9% uptime SLA
 - SOC 2 compliance
 
-[View detailed pricing →](https://pact-memory.com/pricing)
+[View detailed pricing →](https://neurobloom.ai/pricing)
 
 ---
 
@@ -394,26 +405,24 @@ while True:
 ```
 
 ### Therapy/Coaching Bot
-See [examples/emotional_tracking.py](./examples/emotional_tracking.py)
+See [examples/emotional_tracking_complete.py](./examples/emotional_tracking_complete.py)
 
 ### Customer Support Agent
 See [examples/support_agent.py](./examples/support_agent.py)
-
-### Jupyter Notebook Demo
-See [examples/notebooks/demo.ipynb](./examples/notebooks/demo.ipynb)
 
 ---
 
 ## Documentation
 
-- [Full API Reference](https://docs.pact-memory.com/langchain/api)
-- [Integration Guide](https://docs.pact-memory.com/langchain/guide)
-- [Best Practices](https://docs.pact-memory.com/langchain/best-practices)
-- [Migration from Standard Memory](https://docs.pact-memory.com/langchain/migration)
+- [Full API Reference](https://docs.neurobloom.ai/pact/langchain/api)
+- [Integration Guide](https://docs.neurobloom.ai/pact/langchain/guide)
+- [Best Practices](https://docs.neurobloom.ai/pact/langchain/best-practices)
+- [Migration from Standard Memory](https://docs.neurobloom.ai/pact/langchain/migration)
 
 ---
 
 ## How It Works
+
 ```
 ┌─────────────────┐
 │  Your LangChain │
@@ -430,7 +439,7 @@ See [examples/notebooks/demo.ipynb](./examples/notebooks/demo.ipynb)
          │ API calls (REST)
          │
 ┌────────▼────────┐
-│   PACT Server   │  ← Managed service
+│   PACT Server   │  ← Managed service by NeurobloomAI
 │                 │  ← Handles emotional analysis
 │                 │  ← Context consolidation
 │                 │  ← Graph storage
@@ -456,22 +465,22 @@ See [examples/notebooks/demo.ipynb](./examples/notebooks/demo.ipynb)
 **A:** No. The emotional context is added as separate variables. Your prompts work as-is, but you can optionally reference `{emotional_state}` if you want.
 
 ### Q: How much does it cost?
-**A:** Free tier: 10K tokens/month. Paid plans start at $20/month. [See pricing →](https://pact-memory.com/pricing)
+**A:** Free tier: 10K tokens/month. Paid plans start at $20/month. [See pricing →](https://neurobloom.ai/pricing)
 
 ### Q: Where is my data stored?
 **A:** On PACT's secure servers (SOC 2 compliant). You can also self-host the PACT server.
 
 ### Q: Can I use this offline?
-**A:** Not yet, but self-hosted version is coming in Q2 2025.
+**A:** Not yet, but self-hosted version is coming in Q2 2026.
 
 ### Q: Does it work with LangChain agents?
 **A:** Yes! Works with chains, agents, and any LangChain component that uses memory.
 
 ### Q: What about privacy?
-**A:** All data is encrypted in transit and at rest. You can delete sessions anytime. See [Privacy Policy](https://pact-memory.com/privacy).
+**A:** All data is encrypted in transit and at rest. You can delete sessions anytime. See [Privacy Policy](https://neurobloom.ai/privacy).
 
 ### Q: Can I visualize the memory graph?
-**A:** Yes! Use `memory.get_context_graph()` to export, or use [PACT Studio](https://studio.pact-memory.com) for a visual UI.
+**A:** Yes! Use `memory.get_context_graph()` to export, or use [PACT Studio](https://studio.neurobloom.ai) for a visual UI.
 
 ---
 
@@ -481,12 +490,12 @@ See [examples/notebooks/demo.ipynb](./examples/notebooks/demo.ipynb)
 - [x] Emotional tracking
 - [x] Context consolidation
 - [x] Async support
-- [ ] Self-hosted option (Q2 2025)
-- [ ] Multi-session support (Q2 2025)
-- [ ] LangSmith integration (Q3 2025)
-- [ ] Voice tone analysis (Q3 2025)
+- [ ] Self-hosted option (Q2 2026)
+- [ ] Multi-session support (Q2 2026)
+- [ ] LangSmith integration (Q3 2026)
+- [ ] Voice tone analysis (Q3 2026)
 
-[View full roadmap →](https://github.com/yourorg/pact-hx/projects/1)
+[View full roadmap →](https://github.com/neurobloomai/pact-hx/projects/1)
 
 ---
 
@@ -496,7 +505,7 @@ We welcome contributions! See [CONTRIBUTING.md](./CONTRIBUTING.md)
 
 **Quick start:**
 ```bash
-git clone https://github.com/yourorg/pact-hx.git
+git clone https://github.com/neurobloomai/pact-hx.git
 cd pact-hx/packages/langchain
 pip install -e ".[dev]"
 pytest
@@ -506,10 +515,10 @@ pytest
 
 ## Support
 
-- 📚 [Documentation](https://docs.pact-memory.com/langchain)
-- 💬 [Discord Community](https://discord.gg/pact-memory)
-- 🐛 [Issue Tracker](https://github.com/yourorg/pact-hx/issues)
-- 📧 [Email Support](mailto:support@pact-memory.com)
+- 📚 [Documentation](https://docs.neurobloom.ai/pact/langchain)
+- 💬 [Discord Community](https://discord.gg/neurobloom)
+- 🐛 [Issue Tracker](https://github.com/neurobloomai/pact-hx/issues)
+- 📧 [Email Support](mailto:hello@neurobloom.ai)
 
 ---
 
@@ -521,7 +530,7 @@ MIT License - see [LICENSE](./LICENSE)
 
 ## Acknowledgments
 
-Built with ❤️ for the LangChain community.
+Built with ❤️ for the LangChain community by NeurobloomAI.
 
 Special thanks to:
 - LangChain team for the amazing framework
@@ -534,14 +543,14 @@ Special thanks to:
 
 If you find this useful, give us a star! ⭐
 
-[![Star History Chart](https://api.star-history.com/svg?repos=yourorg/pact-hx&type=Date)](https://star-history.com/#yourorg/pact-hx&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=neurobloomai/pact-hx&type=Date)](https://star-history.com/#neurobloomai/pact-hx&Date)
 
 ---
 
 <div align="center">
 
-**Made with 🧠 by the PACT team**
+**Made with 🧠 by NeurobloomAI**
 
-[Website](https://pact-memory.com) • [Docs](https://docs.pact-memory.com) • [Discord](https://discord.gg/pact-memory) • [Twitter](https://twitter.com/pact_memory)
+[Website](https://neurobloom.ai) • [Docs](https://docs.neurobloom.ai) • [Discord](https://discord.gg/neurobloom) • [Twitter](https://twitter.com/neurobloomai)
 
 </div>

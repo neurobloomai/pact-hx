@@ -1,0 +1,28 @@
+.
+|____PACKAGE_SUMMARY.md
+|____QUICKSTART.md
+|____STRUCTURE.txt
+|____packages
+| |____langchain
+| | |____.env.example
+| | |____.gitignore
+| | |____CONTRIBUTING.md
+| | |____LICENSE
+| | |____MANIFEST.in
+| | |____README.md
+| | |____examples
+| | | |____basic_usage.py
+| | | |____emotional_tracking.py
+| | | |____emotional_tracking_complete.py
+| | | |____support_agent.py
+| | |____pact_langchain
+| | | |______init__.py
+| | | |____client.py
+| | | |____memory.py
+| | | |____version.py
+| | |____pyproject.toml
+| | |____requirements.txt
+| | |____setup.py
+| | |____tests
+| | | |______init__.py
+| | | |____test_memory.py

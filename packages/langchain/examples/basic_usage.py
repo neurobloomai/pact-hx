@@ -15,7 +15,7 @@ Set your API keys:
 """
 
 import os
-from langchain.llms import OpenAI
+from langchain_openai import ChatOpenAI  # Updated import
 from langchain.chains import ConversationChain
 from pact_langchain import PACTMemory
 
@@ -44,8 +44,8 @@ def main():
         return_emotional_context=True
     )
     
-    # Create LangChain conversation
-    llm = OpenAI(temperature=0.7)
+    # Create LangChain conversation with updated LLM
+    llm = ChatOpenAI(temperature=0.7, model="gpt-3.5-turbo")
     conversation = ConversationChain(
         llm=llm,
         memory=memory,
@@ -91,6 +91,8 @@ def main():
             break
         except Exception as e:
             print(f"\n❌ Error: {e}")
+            print("\nTip: Make sure you have installed all dependencies:")
+            print("  pip install langchain-openai langchain-community")
 
 
 if __name__ == "__main__":

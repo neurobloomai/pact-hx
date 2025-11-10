@@ -44,6 +44,7 @@ setup(
     install_requires=[
         "langchain>=0.1.0",
         "langchain-core>=0.1.0",
+        "langchain-community>=0.0.10",  # Added for LangChain compatibility
         "requests>=2.28.0",
         "pydantic>=2.0.0",
     ],
@@ -55,6 +56,10 @@ setup(
             "black>=23.0.0",
             "mypy>=1.0.0",
             "ruff>=0.1.0",
+        ],
+        "examples": [
+            "langchain-openai>=0.0.5",  # For running examples
+            "python-dotenv>=1.0.0",
         ],
     },
     keywords="langchain memory ai llm emotional-intelligence context pact neurobloom",

@@ -10,7 +10,7 @@ https://github.com/neurobloomai/pact-hx
 from typing import Any, Dict, List, Optional
 from langchain.memory.chat_memory import BaseChatMemory
 from langchain.schema import BaseMessage
-from pydantic import Field
+from pydantic import Field, PrivateAttr
 
 from .client import PACTClient
 
@@ -62,19 +62,21 @@ class PACTMemory(BaseChatMemory):
     
     # Internal state
     session_id: Optional[str] = Field(default=None, description="PACT session ID")
-    _client: Any = Field(default=None, exclude=True)
+    
+    # Private attribute for Pydantic 2.0 compatibility
+    _pact_client: Any = PrivateAttr(default=None)
     
     class Config:
         arbitrary_types_allowed = True
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._client = PACTClient(
+        self._pact_client = PACTClient(
             api_key=self.api_key,
             api_url=self.api_url
         )
         # Create session on init
-        self.session_id = self._client.create_session()
+        self.session_id = self._pact_client.create_session()
     
     # REQUIRED: LangChain BaseChatMemory interface
     
@@ -93,7 +95,7 @@ class PACTMemory(BaseChatMemory):
             dict: Contains 'history' plus optional emotional context
         """
         # Fetch from PACT API
-        response = self._client.get_context(
+        response = self._pact_client.get_context(
             session_id=self.session_id,
             max_tokens=self.max_token_limit,
             include_emotional=self.emotional_tracking
@@ -124,7 +126,7 @@ class PACTMemory(BaseChatMemory):
         ai_message = outputs.get(self.output_key, "")
         
         # Send to PACT API
-        self._client.save_interaction(
+        self._pact_client.save_interaction(
             session_id=self.session_id,
             user_message=user_message,
             ai_message=ai_message,
@@ -135,8 +137,8 @@ class PACTMemory(BaseChatMemory):
     def clear(self) -> None:
         """Clear memory and reset session."""
         if self.session_id:
-            self._client.delete_session(self.session_id)
-        self.session_id = self._client.create_session()
+            self._pact_client.delete_session(self.session_id)
+        self.session_id = self._pact_client.create_session()
     
     # PACT-specific methods
     
@@ -147,7 +149,7 @@ class PACTMemory(BaseChatMemory):
         Returns:
             dict: Current emotional state, valence, key emotions
         """
-        return self._client.get_emotional_state(self.session_id)
+        return self._pact_client.get_emotional_state(self.session_id)
     
     def get_context_graph(self) -> Dict[str, Any]:
         """
@@ -156,7 +158,7 @@ class PACTMemory(BaseChatMemory):
         Returns:
             dict: Node/edge graph structure of conversation context
         """
-        return self._client.get_memory_graph(self.session_id)
+        return self._pact_client.get_memory_graph(self.session_id)
     
     def force_consolidation(self) -> Dict[str, Any]:
         """
@@ -165,7 +167,7 @@ class PACTMemory(BaseChatMemory):
         Returns:
             dict: Consolidation summary and stats
         """
-        return self._client.consolidate_context(self.session_id)
+        return self._pact_client.consolidate_context(self.session_id)
     
     def set_context_priority(self, topic: str, priority: str) -> None:
         """
@@ -175,7 +177,7 @@ class PACTMemory(BaseChatMemory):
             topic: Topic identifier
             priority: "high", "medium", or "low"
         """
-        self._client.set_priority(
+        self._pact_client.set_priority(
             session_id=self.session_id,
             topic=topic,
             priority=priority
@@ -209,7 +211,7 @@ class AsyncPACTMemory(PACTMemory):
     
     async def aload_memory_variables(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         """Async version of load_memory_variables."""
-        response = await self._client.aget_context(
+        response = await self._pact_client.aget_context(
             session_id=self.session_id,
             max_tokens=self.max_token_limit,
             include_emotional=self.emotional_tracking
@@ -230,7 +232,7 @@ class AsyncPACTMemory(PACTMemory):
         user_message = inputs.get(self.input_key, "")
         ai_message = outputs.get(self.output_key, "")
         
-        await self._client.asave_interaction(
+        await self._pact_client.asave_interaction(
             session_id=self.session_id,
             user_message=user_message,
             ai_message=ai_message,

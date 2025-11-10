@@ -6,12 +6,18 @@ Demonstrates PACT's emotional awareness in a coaching/therapy context.
 Part of PACT by NeurobloomAI
 https://github.com/neurobloomai/pact-hx
 
+This example shows:
+- Real-time emotional state tracking
+- Emotional trend detection
+- Priority escalation based on emotion
+- Context-aware responses
+
 Run:
-    python examples/emotional_tracking_complete.py
+    python examples/emotional_tracking.py
 """
 
 import os
-from langchain_openai import ChatOpenAI  # Updated import
+from langchain_openai import ChatOpenAI
 from langchain.chains import ConversationChain
 from pact_langchain import PACTMemory
 
@@ -43,7 +49,13 @@ def display_emotional_panel(state):
 def main():
     pact_api_key = os.getenv("PACT_API_KEY")
     if not pact_api_key:
-        print("❌ Set PACT_API_KEY environment variable")
+        print("❌ Error: Set PACT_API_KEY environment variable")
+        print("   Get your key at: https://neurobloom.ai")
+        return
+    
+    openai_key = os.getenv("OPENAI_API_KEY")
+    if not openai_key:
+        print("❌ Error: Set OPENAI_API_KEY environment variable")
         return
     
     print("🧠 PACT Memory - Emotional Coaching Example")

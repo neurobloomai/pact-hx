@@ -17,7 +17,7 @@ Run:
 """
 
 import os
-from langchain.llms import OpenAI
+from langchain_openai import ChatOpenAI  # Updated import
 from langchain.chains import ConversationChain
 from langchain.prompts import PromptTemplate
 from pact_langchain import PACTMemory
@@ -71,7 +71,7 @@ def main():
         consolidation_threshold=15
     )
     
-    llm = OpenAI(temperature=0.7)
+    llm = ChatOpenAI(temperature=0.7, model="gpt-3.5-turbo")
     conversation = ConversationChain(
         llm=llm,
         memory=memory,
@@ -118,6 +118,8 @@ def main():
             break
         except Exception as e:
             print(f"\n❌ Error: {e}")
+            print("\nTip: Install dependencies:")
+            print("  pip install langchain-openai langchain-community")
 
 
 if __name__ == "__main__":

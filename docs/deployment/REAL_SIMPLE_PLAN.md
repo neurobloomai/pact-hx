@@ -77,3 +77,19 @@ Monitoring? When breaking.
 Perfect code? Never needed.
 Documentation? After it works.
 Marketing? After people use it.
+
+
+** The Constants: **
+** What ALWAYS works: **
+
+✅ Simplicity over complexity
+✅ Working code over perfect plans
+✅ Real feedback over imagined scenarios
+✅ One step at a time over grand visions
+
+What's TRENDS (noise):
+
+❌ Latest AWS service
+❌ Hottest architecture pattern
+❌ Fancy monitoring tools
+❌ Elaborate timelines

@@ -1,5 +1,7 @@
 🌟 The Real Plan (Muddhu Style)
-Week 1: Clarity
+
+
+** Week 1: Clarity **
 
 What: Simple API (3 endpoints)
 How: FastAPI (you know Python)
@@ -8,7 +10,9 @@ When: When it feels right
 Why: Because users need it
 
 No agitation. No noise. Just clarity.
-Week 2: Simplicity
+
+
+** Week 2: Simplicity **
 
 Does it work? Test it.
 Does it break? Fix it.
@@ -16,7 +20,9 @@ Is it fast enough? Probably yes.
 Need more? Add later.
 
 No chaos. Just simple testing.
-Week N: Reality
+
+
+** Week N: Reality **
 
 Some users try it
 Some love it, some hate it

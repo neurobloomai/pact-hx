@@ -66,6 +66,28 @@ pip install pact-langchain
 
 ## Quick Start
 
+## Quick Start
+```python
+pip install pact-langchain
+
+from pact_langchain import PACTMemory
+
+# Use with deployed API
+memory = PACTMemory(
+    api_key="your-key",
+    api_url="https://pact-hx.onrender.com"  # Live API!
+)
+
+# Save conversation
+memory.save_context(
+    {"input": "Hello!"},
+    {"output": "Hi there!"}
+)
+
+# Load context
+context = memory.load_memory_variables({})
+```
+
 ### Basic Usage (Drop-in Replacement)
 
 ```python

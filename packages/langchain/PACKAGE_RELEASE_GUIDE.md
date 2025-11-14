@@ -154,24 +154,23 @@ pact-hx-v1.0.0             # Overall repo version (future)
 ## 📂 Final Structure
 
 ```
-pact-hx/                                    # Monorepo root
-│
+pact-hx/                           # Monorepo root
 ├── packages/
 │   ├── langchain/
-│   │   ├── CHANGELOG.md                   # ← pact-langchain changes
+│   │   ├── CHANGELOG.md          # pact-langchain changes
 │   │   ├── README.md
-│   │   └── setup.py (version="0.1.0")
+│   │   └── setup.py              # version="0.1.0"
 │   │
-│   ├── crewai/                            # Future
-│   │   └── CHANGELOG.md                   # ← pact-crewai changes
+│   ├── crewai/                   # Future
+│   │   └── CHANGELOG.md          # pact-crewai changes
 │   │
-│   └── autogpt/                           # Future
-│       └── CHANGELOG.md                   # ← pact-autogpt changes
+│   └── autogpt/                  # Future
+│       └── CHANGELOG.md          # pact-autogpt changes
 │
 ├── server/
-│   └── CHANGELOG.md                       # ← API server changes
+│   └── CHANGELOG.md              # API server changes
 │
-└── CHANGELOG.md                           # ← Overall repo changes
+└── CHANGELOG.md                  # Overall repo changes
 ```
 
 ---

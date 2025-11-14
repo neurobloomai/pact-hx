@@ -7,7 +7,10 @@ fastapi==0.104.1
 uvicorn[standard]==0.24.0
 
 # Database
-sqlalchemy==2.0.23
+#sqlalchemy==2.0.23
+
+# Database - Using 1.4.x for Python 3.13 compatibility
+sqlalchemy==1.4.53
 
 # Testing
 pytest==7.4.3

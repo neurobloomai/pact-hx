@@ -121,9 +121,12 @@ class PACTMemory(BaseChatMemory):
             inputs: User input (typically {"input": "user message"})
             outputs: AI output (typically {"output": "ai response"})
         """
-        # Extract messages
-        user_message = inputs.get(self.input_key, "")
-        ai_message = outputs.get(self.output_key, "")
+        # Extract messages — input_key/output_key may be None when BaseChatMemory
+        # infers them dynamically; fall back to first available key.
+        input_key = self.input_key or (next(iter(inputs), None))
+        output_key = self.output_key or (next(iter(outputs), None))
+        user_message = inputs.get(input_key, "") if input_key else ""
+        ai_message = outputs.get(output_key, "") if output_key else ""
         
         # Send to PACT API
         self._pact_client.save_interaction(

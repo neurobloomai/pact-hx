@@ -78,7 +78,7 @@ def test_save_interaction():
     # Save interaction
     response = client.post(
         f"/sessions/{session_id}/interactions",
-        params={
+        json={
             "user_message": "Hello, I'm feeling happy!",
             "ai_message": "That's wonderful to hear!"
         }
@@ -102,7 +102,7 @@ def test_full_flow():
     # 2. Save interaction
     save_response = client.post(
         f"/sessions/{session_id}/interactions",
-        params={
+        json={
             "user_message": "I'm working on PACT!",
             "ai_message": "That's exciting! Tell me more."
         }

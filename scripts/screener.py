@@ -33,7 +33,7 @@ UNIVERSE = [
 # Future contenders — great businesses not yet qualifying, tracked separately
 WATCHLIST = [
     'PLTR','ALAB','CRWD','AXON','MELI','ARM','SNOW','BILL',
-    'MDB','NET','HUBS','TEAM',
+    'MDB','NET','HUBS','TEAM','MKC',
 ]
 
 def get_fundamentals(ticker):

@@ -39,6 +39,34 @@ pip install pact-hx
 - [API Reference](docs/api_reference/)
 - [Examples](examples/)
 
+## Market Tools
+
+Two standalone tools in [`scripts/`](scripts/) that demonstrate PACT-HX in a real daily-use context — theme-based ETF momentum tracking and quality stock screening.
+
+### Market Selective Briefing
+
+Tracks 12 theme-based ETFs (Software, Semis, Cyber, Grid, Nuclear, Small/Mid Cap) across four moving average timeframes. Signals: **ALIGNED** · **PULLBACK** · **AVOID**.
+
+```bash
+pip install yfinance
+python scripts/dashboard.py              # 15-min cache
+python scripts/dashboard.py --refresh    # force fresh data
+```
+
+### Quality Stock Screener
+
+Screens 117 S&P 500 names against debt, margin, returns, FCF, and valuation filters. Sector-aware grading (A+ / A / B). Includes a watchlist for future contenders with per-filter blocker tracking.
+
+```bash
+python scripts/screener.py
+```
+
+Both tools output an interactive HTML report that opens in your browser. See [`scripts/README.md`](scripts/README.md) for full documentation.
+
+> For informational purposes only. Not financial advice.
+
+---
+
 ## Contributing
 
 See [CONTRIBUTING.md](docs/contributing.md)

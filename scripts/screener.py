@@ -26,6 +26,11 @@ UNIVERSE = [
     'MU','MPWR','MRVL','ITW','ROP','SYK','BSX','AMZN',
 ]
 
+# Future contenders — great businesses not yet qualifying, tracked separately
+WATCHLIST = [
+    'PLTR','ALAB','CRWD','AXON','APP','MELI','ARM','SNOW',
+]
+
 def get_fundamentals(ticker):
     try:
         t    = yf.Ticker(ticker)
@@ -100,6 +105,26 @@ def passes_quality_filter(d):
 
     return True
 
+def failing_filters(d):
+    """Returns list of (filter_name, current_value, threshold) tuples for what's blocking qualification."""
+    if d is None: return [('No data', '—', '—')]
+    fails = []
+    if d['debt_to_ev'] is None:
+        fails.append(('Debt/EV', 'missing', '≤ 0.15'))
+    elif d['debt_to_ev'] > 0.15:
+        fails.append(('Debt/EV', f"{d['debt_to_ev']}", '≤ 0.15'))
+    if d['operating_margin'] is None or d['operating_margin'] < 10:
+        fails.append(('Op Margin', f"{d['operating_margin']}%" if d['operating_margin'] is not None else 'missing', '≥ 10%'))
+    if d['net_margin'] is None or d['net_margin'] < 5:
+        fails.append(('Net Margin', f"{d['net_margin']}%" if d['net_margin'] is not None else 'missing', '≥ 5%'))
+    if d['roe'] is None or d['roe'] < 10:
+        fails.append(('ROE', f"{d['roe']}%" if d['roe'] is not None else 'missing', '≥ 10%'))
+    if d['fcf_yield'] is None or d['fcf_yield'] < 0:
+        fails.append(('FCF Yield', f"{d['fcf_yield']}%" if d['fcf_yield'] is not None else 'missing', '> 0%'))
+    if d['pe'] is not None and d['pe'] > 100:
+        fails.append(('P/E', f"{d['pe']}x", '≤ 100x'))
+    return fails if fails else [('Passes all filters', '—', '—')]
+
 def quality_grade(d):
     sector = d.get('sector', '')
     is_financial = 'Financial' in sector
@@ -139,7 +164,48 @@ def pct_color(val, good_above=0):
     c = '#3fb950' if val >= good_above else '#f85149'
     return f'<span style="color:{c}">{val}%</span>'
 
-def build_html(results):
+def build_watchlist_section(watchlist):
+    if not watchlist: return ''
+    rows = build_watchlist_rows(watchlist)
+    return f"""
+<div class="section-header">👀 Watchlist — Future Contenders</div>
+<div class="section-sub">Exceptional businesses not yet qualifying. Tracked for when valuation or fundamentals cross the threshold.</div>
+<table>
+  <thead>
+    <tr>
+      <th>Ticker</th><th>Name</th><th>Sector</th><th>Price</th>
+      <th>Op%</th><th>Net%</th><th>ROE%</th><th>FCF Yld</th><th>Rev Grw</th><th>P/E</th>
+      <th>Blocking Filters</th>
+    </tr>
+  </thead>
+  <tbody>{rows}</tbody>
+</table>"""
+
+def build_watchlist_rows(watchlist):
+    rows = ''
+    for d in watchlist:
+        if d is None: continue
+        fails = failing_filters(d)
+        blockers = ' &nbsp;·&nbsp; '.join(
+            f'<span class="blocker">{f[0]}</span> <span class="blocker-val">{f[1]}</span> <span class="blocker-threshold">→ {f[2]}</span>'
+            for f in fails
+        )
+        rows += f"""<tr>
+          <td class="ticker">{d['ticker']}</td>
+          <td style="color:#8b949e;font-size:11px">{d['name'][:20]}</td>
+          <td style="color:#8b949e;font-size:11px">{d['sector'][:15]}</td>
+          <td>${fmt(d['price'])}</td>
+          <td>{pct_color(d['operating_margin'], 10)}</td>
+          <td>{pct_color(d['net_margin'], 5)}</td>
+          <td>{pct_color(d['roe'], 10)}</td>
+          <td>{pct_color(d['fcf_yield'], 0)}</td>
+          <td>{pct_color(d['rev_growth'], 10)}</td>
+          <td style="color:#e6edf3">{fmt(d['pe'], 'x')}</td>
+          <td style="font-size:11px">{blockers}</td>
+        </tr>"""
+    return rows
+
+def build_html(results, watchlist=None):
     now  = datetime.now().strftime('%B %d, %Y  %H:%M')
     rows = ''
 
@@ -194,6 +260,11 @@ def build_html(results):
   .criteria-grid {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }}
   .criteria-item {{ font-size: 11px; color: #8b949e; }}
   .criteria-item span {{ color: #58a6ff; }}
+  .section-header {{ font-size: 15px; font-weight: 700; color: #f0883e; margin: 40px 0 6px; }}
+  .section-sub {{ color: #8b949e; font-size: 11px; margin-bottom: 16px; }}
+  .blocker {{ color: #f85149; font-weight: 600; }}
+  .blocker-val {{ color: #ffa657; }}
+  .blocker-threshold {{ color: #484f58; }}
 </style>
 </head>
 <body>
@@ -229,6 +300,7 @@ def build_html(results):
   </thead>
   <tbody>{rows}</tbody>
 </table>
+{build_watchlist_section(watchlist)}
 </body>
 </html>"""
 
@@ -241,12 +313,18 @@ if __name__ == '__main__':
     passed = [d for d in raw if passes_quality_filter(d)]
     for d in passed:
         d['grade'] = quality_grade(d)
-
     passed.sort(key=lambda x: (0 if x['grade']=='A+' else 1 if x['grade']=='A' else 2, x['debt_to_ev'] or 1))
 
-    print(f"\n  ✅  {len(passed)} companies passed filters\n")
+    print(f"  ✅  {len(passed)} companies passed filters")
+    print(f"\n  Fetching {len(WATCHLIST)} watchlist contenders ...", flush=True)
 
-    html = build_html(passed)
+    with ThreadPoolExecutor(max_workers=10) as ex:
+        watch_raw = list(ex.map(get_fundamentals, WATCHLIST))
+    watch_raw = [d for d in watch_raw if d is not None]
+
+    print(f"  👀  {len(watch_raw)} watchlist entries fetched\n")
+
+    html = build_html(passed, watch_raw)
     path = os.path.expanduser('~/quality_screener.html')
     with open(path, 'w') as f:
         f.write(html)

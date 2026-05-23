@@ -1,26 +1,37 @@
 """
-Morning Market Briefing — CLI Dashboard
+Market Selective Briefing — CLI + HTML Dashboard
 Usage: python dashboard.py
+       python dashboard.py --refresh   # force fresh data
+
+Data: Yahoo Finance via yfinance
+Disclaimer: For informational purposes only. Not financial advice.
 """
 
 import yfinance as yf
-import numpy as np
-import pandas as pd
-from datetime import datetime, date
+import warnings, json, os, time, webbrowser
+from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import warnings, zoneinfo, json, os, time
 warnings.filterwarnings('ignore')
+
+try:
+    from zoneinfo import ZoneInfo
+    def _et_now(): return datetime.now(ZoneInfo('America/New_York'))
+except ImportError:
+    from datetime import timezone, timedelta
+    def _et_now():
+        # Approximate ET (UTC-4 EDT / UTC-5 EST) — install tzdata for accuracy
+        offset = timedelta(hours=-4)
+        return datetime.now(timezone(offset))
 
 CACHE_FILE = os.path.expanduser('~/.dashboard_cache.json')
 CACHE_TTL  = 900  # 15 minutes
 
-WATCHLIST = ['IGV','WCLD','SMH','CIBR','GRID','NLR','SMR','OKLO','B','IWM','IWR','TOPT']
+TICKERS = ['IGV','WCLD','SMH','CIBR','GRID','NLR','SMR','OKLO','B','IWM','IWR','TOPT']
 
 THEMES = {
-    'IGV':'Software', 'WCLD':'Cloud',   'SMH':'Semis',      'CIBR':'Cyber',
-    'GRID':'Grid',    'NLR':'NuclearETF','SMR':'SMR',        'OKLO':'OKLO',
-    'B':'Mining',     'IWM':'SmallCap', 'IWR':'MidCap',
-    'TOPT':'Top20ETF',
+    'IGV':'Software', 'WCLD':'Cloud',    'SMH':'Semis',     'CIBR':'Cyber',
+    'GRID':'Grid',    'NLR':'NuclearETF','SMR':'SMR',       'OKLO':'OKLO',
+    'B':'Mining',     'IWM':'SmallCap',  'IWR':'MidCap',    'TOPT':'Top20ETF',
 }
 
 GROUPS = [
@@ -32,16 +43,15 @@ GROUPS = [
 ]
 
 # ANSI colors
-G  = '\033[92m'   # green
-R  = '\033[91m'   # red
-Y  = '\033[93m'   # yellow
-GR = '\033[90m'   # grey
-B  = '\033[94m'   # blue
-RS = '\033[0m'    # reset
+G  = '\033[92m'
+R  = '\033[91m'
+Y  = '\033[93m'
+GR = '\033[90m'
+B  = '\033[94m'
+RS = '\033[0m'
 
 def after_close():
-    et = datetime.now(zoneinfo.ZoneInfo('America/New_York'))
-    return et.hour >= 16
+    return _et_now().hour >= 16
 
 def load_cache():
     try:
@@ -50,7 +60,7 @@ def load_cache():
                 c = json.load(f)
             if time.time() - c.get('_ts', 0) < CACHE_TTL:
                 return c
-    except:
+    except Exception:
         pass
     return {}
 
@@ -59,7 +69,7 @@ def save_cache(data):
         data['_ts'] = time.time()
         with open(CACHE_FILE, 'w') as f:
             json.dump(data, f)
-    except:
+    except Exception:
         pass
 
 def fetch(ticker, period, interval):
@@ -70,13 +80,14 @@ def above_ma(ticker, interval, period, ma):
         df = fetch(ticker, period, interval)
         if len(df) < ma + 1: return None
         return float(df['Close'].iloc[-1]) > float(df['Close'].rolling(ma).mean().iloc[-1])
-    except:
+    except Exception:
         return None
 
 def get_data(ticker):
     try:
         df = fetch(ticker, '3mo', '1d')
         if df is None or len(df) < 6:
+            print(f"  ⚠ {ticker}: insufficient data")
             return None
 
         price   = float(df['Close'].iloc[-1])
@@ -95,8 +106,8 @@ def get_data(ticker):
         ma20    = float(df['Close'].rolling(20).mean().iloc[-1])
         ma_dist = (price - ma20) / ma20 * 100
 
-        d_above = price > ma50
-        w_above  = above_ma(ticker, '1wk', '2y', 20)
+        d_above   = price > ma50
+        w_above   = above_ma(ticker, '1wk', '2y', 20)
         m10_above = above_ma(ticker, '1mo', '5y', 10)
         m20_above = above_ma(ticker, '1mo', '5y', 20)
 
@@ -104,10 +115,10 @@ def get_data(ticker):
             ticker=ticker, theme=THEMES[ticker], price=price,
             day_chg=day_chg, vol_rat=vol_rat, vol_lbl=vol_lbl,
             trend=trend, ma_dist=ma_dist,
-            d=d_above, w=w_above, m10=m10_above, m20=m20_above
+            d=d_above, w=w_above, m10=m10_above, m20=m20_above,
         )
     except Exception as e:
-        print(f"  {ticker} error: {e}")
+        print(f"  ⚠ {ticker}: {e}")
         return None
 
 def fmt_chg(v):
@@ -130,28 +141,23 @@ def momentum_score(d):
     return sum(1 for x in [d['d'], d['w'], d['m10'], d['m20']] if x)
 
 def fmt_score(s):
-    c = G if s == 4 else (G if s == 3 else (Y if s == 2 else R))
+    c = G if s >= 3 else (Y if s == 2 else R)
     return f"{c}[{s}/4]{RS}"
 
 def signal(d):
+    """MA-alignment signal only — no single-day noise."""
     above = momentum_score(d)
-    if above == 4:                                         return f"{G}ALIGNED{RS}"
-    if d['m20'] and d['w'] and not d['d']:                 return f"{B}PULLBACK{RS}"
-    if not d['m20'] and not d['w']:                        return f"{R}AVOID{RS}"
-    if d['day_chg'] < -2.0 and d['vol_rat'] > 1.5:        return f"{R}SELLING{RS}"
-    if d['day_chg'] < -1.5 and d['vol_rat'] < 0.5:        return f"{GR}DRIFT{RS}"
-    if d['ma_dist'] > 12   and d['day_chg'] > 1.5:        return f"{Y}EXTENDED{RS}"
+    if above == 4:                        return f"{G}ALIGNED{RS}"
+    if d['m20'] and d['w'] and not d['d']: return f"{B}PULLBACK{RS}"
+    if not d['m20'] and not d['w']:       return f"{R}AVOID{RS}"
     return ''
 
 def signal_html(d):
     above = momentum_score(d)
-    if above == 4:                                        return '<span style="color:#3fb950;font-weight:700">ALIGNED</span>'
-    if d['m20'] and d['w'] and not d['d']:               return '<span style="color:#58a6ff;font-weight:700">PULLBACK</span>'
-    if not d['m20'] and not d['w']:                      return '<span style="color:#f85149;font-weight:700">AVOID</span>'
-    if d['day_chg'] < -2.0 and d['vol_rat'] > 1.5:      return '<span style="color:#f85149;font-weight:700">SELLING</span>'
-    if d['day_chg'] < -1.5 and d['vol_rat'] < 0.5:      return '<span style="color:#8b949e;font-weight:700">DRIFT</span>'
-    if d['ma_dist'] > 12   and d['day_chg'] > 1.5:      return '<span style="color:#e3b341;font-weight:700">EXTENDED</span>'
-    return '—'
+    if above == 4:                        return '<span style="color:#3fb950;font-weight:700">ALIGNED</span>'
+    if d['m20'] and d['w'] and not d['d']: return '<span style="color:#58a6ff;font-weight:700">PULLBACK</span>'
+    if not d['m20'] and not d['w']:       return '<span style="color:#f85149;font-weight:700">AVOID</span>'
+    return '<span style="color:#484f58">—</span>'
 
 def score_html(s):
     c = '#3fb950' if s >= 3 else ('#e3b341' if s == 2 else '#f85149')
@@ -215,7 +221,8 @@ def build_html(data):
   td {{ padding: 7px 10px; border-bottom: 1px solid #161b22; }}
   tr:hover td {{ background: #161b22; }}
   .ticker {{ font-weight: 700; color: #e6edf3; }}
-  .legend {{ color: #484f58; font-size: 10px; margin-top: 16px; }}
+  .legend {{ color: #484f58; font-size: 10px; margin-top: 16px; line-height: 1.8; }}
+  .disclaimer {{ color: #484f58; font-size: 10px; margin-top: 8px; border-top: 1px solid #21262d; padding-top: 8px; }}
 </style>
 </head>
 <body>
@@ -231,7 +238,14 @@ def build_html(data):
   </thead>
   <tbody>{rows}</tbody>
 </table>
-<div class="legend">▲ above MA &nbsp;▼ below MA &nbsp;|&nbsp; 50D=50DayMA &nbsp;20W=20WeekMA &nbsp;10M=10MonthMA &nbsp;20M=20MonthMA &nbsp;|&nbsp; Vol: T=today P=prev session</div>
+<div class="legend">
+  ▲ above MA &nbsp;▼ below MA &nbsp;|&nbsp; 50D=50-day MA &nbsp;20W=20-week MA &nbsp;10M=10-month MA &nbsp;20M=20-month MA &nbsp;|&nbsp; Vol: T=today P=prev session<br>
+  Signals: ALIGNED=all 4 MAs bullish &nbsp;PULLBACK=long-term up, short-term dip &nbsp;AVOID=below long-term MAs
+</div>
+<div class="disclaimer">
+  Data sourced from Yahoo Finance via yfinance. Prices may be delayed. &nbsp;|&nbsp;
+  For informational purposes only — not financial advice. Always do your own research.
+</div>
 </body>
 </html>"""
 
@@ -266,11 +280,12 @@ def print_dashboard(data):
 
     print()
     print('─' * w)
-    print(f"  {GR}▲ above MA  ▼ below MA  |  50D=50DayMA  20W=20WeekMA  10M=10MonthMA  20M=20MonthMA  |  Vol: T=today P=prev session{RS}")
+    print(f"  {GR}▲/▼ = above/below MA  |  50D 20W 10M 20M = moving average timeframes  |  Vol: T=today P=prev{RS}")
+    print(f"  {GR}For informational purposes only — not financial advice.{RS}")
     print()
 
 if __name__ == '__main__':
-    import sys, webbrowser
+    import sys
     force = '--refresh' in sys.argv
     cache = {} if force else load_cache()
     if cache:
@@ -282,7 +297,7 @@ if __name__ == '__main__':
         print("\n  Loading", end='', flush=True)
         data = {}
         with ThreadPoolExecutor(max_workers=11) as ex:
-            futures = {ex.submit(get_data, t): t for t in WATCHLIST}
+            futures = {ex.submit(get_data, t): t for t in TICKERS}
             for f in as_completed(futures):
                 print('.', end='', flush=True)
                 t = futures[f]

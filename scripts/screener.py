@@ -2,10 +2,12 @@
 Quality Stock Screener
 Filters: Low Debt + High ROIC + Strong Margins + Free Cash Flow
 Run: python screener.py
+
+Data: Yahoo Finance via yfinance
+Disclaimer: For informational purposes only. Not financial advice.
 """
 
 import yfinance as yf
-import pandas as pd
 import warnings, os, webbrowser
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
@@ -80,7 +82,8 @@ def get_fundamentals(ticker):
             fcf_yield       = round(fcf_yield, 1) if fcf_yield is not None else None,
             rev_growth      = round(rev_growth * 100, 1) if rev_growth is not None else None,
         )
-    except Exception:
+    except Exception as e:
+        print(f"  ⚠ {ticker}: {e}")
         return None
 
 def passes_quality_filter(d):
@@ -120,8 +123,10 @@ def failing_filters(d):
         fails.append(('Op Margin', f"{d['operating_margin']}%" if d['operating_margin'] is not None else 'missing', '≥ 10%'))
     if d['net_margin'] is None or d['net_margin'] < 5:
         fails.append(('Net Margin', f"{d['net_margin']}%" if d['net_margin'] is not None else 'missing', '≥ 5%'))
-    if d['roe'] is None or d['roe'] < 10:
-        fails.append(('ROE', f"{d['roe']}%" if d['roe'] is not None else 'missing', '≥ 10%'))
+    roe_ok = d['roe'] is not None and d['roe'] >= 10
+    roa_ok = d['roa'] is not None and d['roa'] >= 15
+    if not roe_ok and not roa_ok:
+        fails.append(('ROE/ROA', f"ROE {d['roe']}% / ROA {d['roa']}%", '≥ 10% / ≥ 15%'))
     if d['fcf_yield'] is None or d['fcf_yield'] < 0:
         fails.append(('FCF Yield', f"{d['fcf_yield']}%" if d['fcf_yield'] is not None else 'missing', '> 0%'))
     if d['pe'] is not None and d['pe'] > 100:
@@ -268,6 +273,7 @@ def build_html(results, watchlist=None):
   .blocker {{ color: #f85149; font-weight: 600; }}
   .blocker-val {{ color: #ffa657; }}
   .blocker-threshold {{ color: #484f58; }}
+  .disclaimer {{ color: #484f58; font-size: 10px; margin-top: 24px; border-top: 1px solid #21262d; padding-top: 8px; line-height: 1.8; }}
 </style>
 </head>
 <body>
@@ -304,6 +310,10 @@ def build_html(results, watchlist=None):
   <tbody>{rows}</tbody>
 </table>
 {build_watchlist_section(watchlist)}
+<div class="disclaimer">
+  Data sourced from Yahoo Finance via yfinance. Prices and fundamentals may be delayed or incomplete.<br>
+  For informational purposes only — not financial advice. Always do your own research before making investment decisions.
+</div>
 </body>
 </html>"""
 

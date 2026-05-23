@@ -53,9 +53,9 @@ python scripts/dashboard.py              # 15-min cache
 python scripts/dashboard.py --refresh    # force fresh data
 ```
 
-### Quality Stock Screener
+### Quality Growth Screener
 
-Screens 117 S&P 500 names against debt, margin, returns, FCF, and valuation filters. Sector-aware grading (A+ / A / B). Includes a watchlist for future contenders with per-filter blocker tracking.
+Screens a curated universe of quality growth names against debt, margin, returns, FCF, and valuation filters. Sector-aware grading (A+ / A / B). Includes a watchlist for future contenders with per-filter blocker tracking.
 
 ```bash
 python scripts/screener.py

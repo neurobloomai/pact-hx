@@ -43,9 +43,9 @@ Opens a formatted HTML report in your browser and prints to terminal.
 
 ---
 
-## Quality Stock Screener — `screener.py`
+## Quality Growth Screener — `screener.py`
 
-Screens 117 S&P 500 quality names against five fundamental filters and grades each company A+, A, or B.
+Screens 120 quality growth names against five fundamental filters and grades each company A+, A, or B. Currently 74 qualify, with 14 contenders tracked on the watchlist.
 
 **Filters applied:**
 
@@ -62,7 +62,7 @@ Screens 117 S&P 500 quality names against five fundamental filters and grades ea
 - Financials/insurers: gross margin replaced with FCF yield and adjusted operating margin thresholds
 - Consulting/services: gross margin threshold lowered to 30%
 
-**Watchlist:** 7 high-quality names not yet qualifying (PLTR, ALAB, CRWD, AXON, MELI, ARM, SNOW) are tracked separately — each showing exactly which filter is blocking them and by how much.
+**Watchlist:** 14 high-quality names not yet qualifying are tracked separately — each showing exactly which filter is blocking them and by how much. Includes PLTR, ALAB, CRWD, MKC, DPZ and others.
 
 **Run:**
 

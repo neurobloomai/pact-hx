@@ -1,6 +1,7 @@
 """
-Quality Stock Screener
-Filters: Low Debt + High ROIC + Strong Margins + Free Cash Flow
+Quality Growth Stock Screener
+Universe: ~115 quality growth names across tech, financials, healthcare, industrials, and consumer.
+Filters: Low Debt + High ROIC + Strong Margins + Free Cash Flow + Valuation sanity
 Run: python screener.py
 
 Data: Yahoo Finance via yfinance
@@ -19,7 +20,7 @@ UNIVERSE = [
     'JNJ','PG','HD','COST','ABBV','MRK','TMO','ACN','AVGO','TXN',
     'QCOM','NEE','DHR','AMAT','LRCX','KLAC','MCHP','ADI','SNPS','CDNS',
     'ADBE','CRM','NOW','INTU','ORCL','FTNT','PANW','CRWD','ZS','DDOG',
-    'VEEV','HUBS','TEAM','WDAY','MDB','NET','BILL','TTD','PAYC','COUP',
+    'VEEV','WDAY','TTD','PAYC',
     'BRK-B','CB','AFL','TRV','PGR','AJG','MMC','AON','WTW','CINF',
     'NVO','ISRG','EW','ALGN','IDXX','MASI','PODD','CTLT','WST',
     'MCO','SPGI','MSCI','ICE','CME','CBOE','FDS','BR','NDAQ','COIN',
@@ -31,7 +32,8 @@ UNIVERSE = [
 
 # Future contenders — great businesses not yet qualifying, tracked separately
 WATCHLIST = [
-    'PLTR','ALAB','CRWD','AXON','MELI','ARM','SNOW',
+    'PLTR','ALAB','CRWD','AXON','MELI','ARM','SNOW','BILL',
+    'MDB','NET','HUBS','TEAM',
 ]
 
 def get_fundamentals(ticker):
@@ -245,7 +247,7 @@ def build_html(results, watchlist=None):
 <html>
 <head>
 <meta charset="utf-8">
-<title>Quality Screener — {now}</title>
+<title>Quality Growth Screener — {now}</title>
 <style>
   * {{ box-sizing: border-box; margin: 0; padding: 0; }}
   body {{ font-family: 'SF Mono','Fira Code',monospace; background: #0d1117; color: #e6edf3; padding: 28px; font-size: 12px; }}
@@ -277,7 +279,7 @@ def build_html(results, watchlist=None):
 </style>
 </head>
 <body>
-<h1>🔍 Quality Screener</h1>
+<h1>🔍 Quality Growth Screener</h1>
 <div class="subtitle">{now}</div>
 <div class="summary">
   Found <span>{len(results)}</span> companies passing all filters —

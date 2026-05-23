@@ -45,7 +45,7 @@ Opens a formatted HTML report in your browser and prints to terminal.
 
 ## Quality Growth Screener — `screener.py`
 
-Screens 120 quality growth names against five fundamental filters and grades each company A+, A, or B. Currently 74 qualify, with 14 contenders tracked on the watchlist.
+Screens a curated universe of quality growth names against five fundamental filters and grades each company A+, A, or B. A separate watchlist tracks high-quality names not yet qualifying, showing exactly which filter is blocking them.
 
 **Filters applied:**
 
@@ -62,7 +62,7 @@ Screens 120 quality growth names against five fundamental filters and grades eac
 - Financials/insurers: gross margin replaced with FCF yield and adjusted operating margin thresholds
 - Consulting/services: gross margin threshold lowered to 30%
 
-**Watchlist:** 14 high-quality names not yet qualifying are tracked separately — each showing exactly which filter is blocking them and by how much. Includes PLTR, ALAB, CRWD, MKC, DPZ and others.
+**Watchlist:** High-quality names not yet qualifying are tracked separately — each showing exactly which filter is blocking them and by how much.
 
 **Run:**
 

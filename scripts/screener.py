@@ -24,6 +24,7 @@ UNIVERSE = [
     'ODFL','EXPD','CHRW','XPO','JBHT','SAIA','KNSL','RLI','CASH','FICO',
     'ROL','CTAS','CPRT','ADP','PAYX','EFX','TRI','IHS','VRSK','IT',
     'MU','MPWR','MRVL','ITW','ROP','SYK','BSX','AMZN','APP',
+    'MTD','MANH','FAST','MNST','POOL','NVR','DOCS','MKTX','ACGL',
 ]
 
 # Future contenders — great businesses not yet qualifying, tracked separately
@@ -94,8 +95,10 @@ def passes_quality_filter(d):
     if d['operating_margin'] is None or d['operating_margin'] < 10: return False
     if d['net_margin'] is None or d['net_margin'] < 5: return False
 
-    # Returns on capital
-    if d['roe'] is None or d['roe'] < 10: return False
+    # Returns on capital — ROA fallback for buyback-heavy companies with distorted book equity
+    roe_ok = d['roe'] is not None and d['roe'] >= 10
+    roa_ok = d['roa'] is not None and d['roa'] >= 15
+    if not roe_ok and not roa_ok: return False
 
     # FCF positive
     if d['fcf_yield'] is None or d['fcf_yield'] < 0: return False

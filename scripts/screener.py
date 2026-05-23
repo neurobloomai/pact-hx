@@ -1,0 +1,255 @@
+"""
+Quality Stock Screener
+Filters: Low Debt + High ROIC + Strong Margins + Free Cash Flow
+Run: python screener.py
+"""
+
+import yfinance as yf
+import pandas as pd
+import warnings, os, webbrowser
+from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor
+warnings.filterwarnings('ignore')
+
+# Broad universe — S&P 500 quality names worth screening
+UNIVERSE = [
+    'AAPL','MSFT','GOOGL','META','NVDA','V','MA','UNH','LLY','JPM',
+    'JNJ','PG','HD','COST','ABBV','MRK','TMO','ACN','AVGO','TXN',
+    'QCOM','NEE','DHR','AMAT','LRCX','KLAC','MCHP','ADI','SNPS','CDNS',
+    'ADBE','CRM','NOW','INTU','ORCL','FTNT','PANW','CRWD','ZS','DDOG',
+    'VEEV','HUBS','TEAM','WDAY','MDB','NET','BILL','TTD','PAYC','COUP',
+    'BRK-B','CB','AFL','TRV','PGR','AJG','MMC','AON','WTW','CINF',
+    'NVO','ISRG','EW','ALGN','IDXX','MASI','PODD','CTLT','WST',
+    'MCO','SPGI','MSCI','ICE','CME','CBOE','FDS','BR','NDAQ','COIN',
+    'ODFL','EXPD','CHRW','XPO','JBHT','SAIA','KNSL','RLI','CASH','FICO',
+    'ROL','CTAS','CPRT','ADP','PAYX','EFX','TRI','IHS','VRSK','IT',
+    'MU','MPWR','MRVL','ITW','ROP','SYK','BSX','AMZN',
+]
+
+def get_fundamentals(ticker):
+    try:
+        t    = yf.Ticker(ticker)
+        info = t.info
+        if not info or 'marketCap' not in info:
+            return None
+
+        # Debt metrics
+        total_debt        = info.get('totalDebt', 0) or 0
+        enterprise_value  = info.get('enterpriseValue') or None
+        debt_to_ev        = total_debt / enterprise_value if enterprise_value else None
+
+        # Profitability
+        gross_margin      = info.get('grossMargins', None)
+        operating_margin  = info.get('operatingMargins', None)
+        net_margin        = info.get('profitMargins', None)
+        roe               = info.get('returnOnEquity', None)
+        roa               = info.get('returnOnAssets', None)
+
+        # Valuation
+        pe                = info.get('trailingPE', None)
+        pb                = info.get('priceToBook', None)
+
+        # FCF
+        fcf               = info.get('freeCashflow', None)
+        market_cap        = info.get('marketCap', 1) or 1
+        fcf_yield         = (fcf / market_cap * 100) if fcf and market_cap else None
+
+        # Revenue growth
+        rev_growth        = info.get('revenueGrowth', None)
+
+        return dict(
+            ticker          = ticker,
+            name            = info.get('shortName', ticker),
+            sector          = info.get('sector', ''),
+            price           = info.get('currentPrice', None),
+            market_cap_b    = round(market_cap / 1e9, 1),
+            debt_to_ev      = round(debt_to_ev, 3) if debt_to_ev is not None else None,
+            gross_margin    = round(gross_margin * 100, 1) if gross_margin is not None else None,
+            operating_margin= round(operating_margin * 100, 1) if operating_margin is not None else None,
+            net_margin      = round(net_margin * 100, 1) if net_margin is not None else None,
+            roe             = round(roe * 100, 1) if roe is not None else None,
+            roa             = round(roa * 100, 1) if roa is not None else None,
+            pe              = round(pe, 1) if pe is not None else None,
+            pb              = round(pb, 1) if pb is not None else None,
+            fcf_yield       = round(fcf_yield, 1) if fcf_yield is not None else None,
+            rev_growth      = round(rev_growth * 100, 1) if rev_growth is not None else None,
+        )
+    except Exception:
+        return None
+
+def passes_quality_filter(d):
+    """Multi-factor quality filter — not just debt."""
+    if d is None: return False
+
+    # Debt filter — the primary ask
+    if d['debt_to_ev'] is None: return False
+    if d['debt_to_ev'] > 0.15: return False
+
+    # Profitability must be real
+    if d['operating_margin'] is None or d['operating_margin'] < 10: return False
+    if d['net_margin'] is None or d['net_margin'] < 5: return False
+
+    # Returns on capital
+    if d['roe'] is None or d['roe'] < 10: return False
+
+    # FCF positive
+    if d['fcf_yield'] is None or d['fcf_yield'] < 0: return False
+
+    # Valuation sanity check — stretched P/E rarely ends well
+    if d['pe'] is not None and d['pe'] > 100: return False
+
+    return True
+
+def quality_grade(d):
+    sector = d.get('sector', '')
+    is_financial = 'Financial' in sector
+    is_services = sector in ('Industrials',) or any(x in d.get('name', '') for x in ('Accenture', 'Consulting'))
+
+    score = 0
+    if d['debt_to_ev'] is not None and d['debt_to_ev'] <= 0.03: score += 2
+    elif d['debt_to_ev'] is not None and d['debt_to_ev'] <= 0.15: score += 1
+
+    if is_financial:
+        # Gross margin is meaningless for insurers/financials — use FCF yield twice instead
+        if d['fcf_yield'] and d['fcf_yield'] >= 5: score += 1
+        if d['operating_margin'] and d['operating_margin'] >= 12: score += 1
+    elif is_services:
+        # Consulting/labour-heavy — gross margin threshold lowered
+        if d['gross_margin'] and d['gross_margin'] >= 30: score += 1
+        if d['operating_margin'] and d['operating_margin'] >= 15: score += 1
+    else:
+        if d['gross_margin'] and d['gross_margin'] >= 60: score += 1
+        if d['operating_margin'] and d['operating_margin'] >= 20: score += 1
+
+    if d['net_margin'] and d['net_margin'] >= 15: score += 1
+    if d['roe'] and d['roe'] >= 20: score += 1
+    if d['fcf_yield'] and d['fcf_yield'] >= 3: score += 1
+    if d['rev_growth'] and d['rev_growth'] >= 10: score += 1
+
+    if score >= 6: return 'A+'
+    if score >= 4: return 'A'
+    return 'B'
+
+def fmt(val, suffix='', prefix=''):
+    if val is None: return '<span style="color:#484f58">—</span>'
+    return f"{prefix}{val}{suffix}"
+
+def pct_color(val, good_above=0):
+    if val is None: return '<span style="color:#484f58">—</span>'
+    c = '#3fb950' if val >= good_above else '#f85149'
+    return f'<span style="color:{c}">{val}%</span>'
+
+def build_html(results):
+    now  = datetime.now().strftime('%B %d, %Y  %H:%M')
+    rows = ''
+
+    for d in results:
+        grade    = d['grade']
+        grade_cls = 'grade-aplus' if grade == 'A+' else ('grade-a' if grade == 'A' else 'grade-b')
+
+        rows += f"""<tr>
+          <td class="ticker">{d['ticker']}</td>
+          <td style="color:#8b949e;font-size:11px">{d['name'][:20]}</td>
+          <td style="color:#8b949e;font-size:11px">{d['sector'][:15]}</td>
+          <td>${fmt(d['price'])}</td>
+          <td>${fmt(d['market_cap_b'])}B</td>
+          <td class="grade-col"><span class="badge {grade_cls}">{grade}</span></td>
+          <td>{fmt(d['debt_to_ev'])}</td>
+          <td>{pct_color(d['gross_margin'], 50)}</td>
+          <td>{pct_color(d['operating_margin'], 15)}</td>
+          <td>{pct_color(d['net_margin'], 10)}</td>
+          <td>{pct_color(d['roe'], 15)}</td>
+          <td>{pct_color(d['fcf_yield'], 2)}</td>
+          <td>{pct_color(d['rev_growth'], 5)}</td>
+          <td>{fmt(d['pe'], 'x')}</td>
+        </tr>"""
+
+    aplus = sum(1 for d in results if d['grade'] == 'A+')
+    a     = sum(1 for d in results if d['grade'] == 'A')
+
+    return f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Quality Screener — {now}</title>
+<style>
+  * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+  body {{ font-family: 'SF Mono','Fira Code',monospace; background: #0d1117; color: #e6edf3; padding: 28px; font-size: 12px; }}
+  h1 {{ font-size: 18px; font-weight: 700; color: #58a6ff; margin-bottom: 4px; }}
+  .subtitle {{ color: #8b949e; margin-bottom: 8px; font-size: 11px; }}
+  .summary {{ color: #8b949e; margin-bottom: 20px; font-size: 12px; }}
+  .summary span {{ color: #e6edf3; font-weight: 700; }}
+  table {{ width: 100%; border-collapse: collapse; }}
+  th {{ text-align: left; padding: 8px 10px; color: #8b949e; font-weight: 500;
+        border-bottom: 2px solid #21262d; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; }}
+  td {{ padding: 8px 10px; border-bottom: 1px solid #161b22; }}
+  tr:hover td {{ background: #161b22; }}
+  .ticker {{ font-weight: 700; color: #e6edf3; }}
+  .badge {{ font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 3px; }}
+  .grade-aplus {{ background: #6e40c9; color: #fff; }}
+  .grade-a     {{ background: #1a4731; color: #3fb950; }}
+  .grade-b     {{ background: #1f2937; color: #9ca3af; }}
+  .criteria {{ background: #161b22; border: 1px solid #21262d; border-radius: 8px; padding: 16px; margin-bottom: 20px; }}
+  .criteria h2 {{ font-size: 11px; color: #8b949e; margin-bottom: 10px; text-transform: uppercase; letter-spacing: .08em; }}
+  .criteria-grid {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }}
+  .criteria-item {{ font-size: 11px; color: #8b949e; }}
+  .criteria-item span {{ color: #58a6ff; }}
+</style>
+</head>
+<body>
+<h1>🔍 Quality Screener</h1>
+<div class="subtitle">{now}</div>
+<div class="summary">
+  Found <span>{len(results)}</span> companies passing all filters —
+  <span>{aplus}</span> A+ &nbsp;·&nbsp; <span>{a}</span> A
+</div>
+
+<div class="criteria">
+  <h2>Filter Criteria</h2>
+  <div class="criteria-grid">
+    <div class="criteria-item">Debt/EV <span>≤ 0.15</span></div>
+    <div class="criteria-item">Operating Margin <span>≥ 10%</span></div>
+    <div class="criteria-item">Net Margin <span>≥ 5%</span></div>
+    <div class="criteria-item">ROE <span>≥ 10%</span></div>
+    <div class="criteria-item">FCF Yield <span>> 0%</span></div>
+    <div class="criteria-item">P/E <span>≤ 100x</span></div>
+    <div class="criteria-item">A+: Debt/EV <span>≤ 0.03</span> + 5 more</div>
+    <div class="criteria-item">A+: Gross Margin <span>≥ 60%</span> (tech/semis)</div>
+    <div class="criteria-item">A+: Op Margin <span>≥ 20%</span> / <span>≥ 12%</span> financials</div>
+  </div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Ticker</th><th>Name</th><th>Sector</th><th>Price</th><th>Mkt Cap</th>
+      <th>Grade</th><th>Debt/EV</th><th>Gross%</th><th>Op%</th><th>Net%</th>
+      <th>ROE%</th><th>FCF Yld</th><th>Rev Grw</th><th>P/E</th>
+    </tr>
+  </thead>
+  <tbody>{rows}</tbody>
+</table>
+</body>
+</html>"""
+
+if __name__ == '__main__':
+    print(f"\n  Screening {len(UNIVERSE)} companies ...", flush=True)
+
+    with ThreadPoolExecutor(max_workers=10) as ex:
+        raw = list(ex.map(get_fundamentals, UNIVERSE))
+
+    passed = [d for d in raw if passes_quality_filter(d)]
+    for d in passed:
+        d['grade'] = quality_grade(d)
+
+    passed.sort(key=lambda x: (0 if x['grade']=='A+' else 1 if x['grade']=='A' else 2, x['debt_to_ev'] or 1))
+
+    print(f"\n  ✅  {len(passed)} companies passed filters\n")
+
+    html = build_html(passed)
+    path = os.path.expanduser('~/quality_screener.html')
+    with open(path, 'w') as f:
+        f.write(html)
+
+    print(f"  Saved → {path}")
+    webbrowser.open(f'file://{path}')

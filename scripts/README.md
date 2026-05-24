@@ -25,7 +25,7 @@ Tracks 12 theme-based ETFs across multiple moving average timeframes and produce
 | Column | Meaning |
 |---|---|
 | Day% | Price change vs previous close |
-| Vol/Avg | Today's volume vs 20-day average (T=today, P=prev session) |
+| Vol/Avg | Volume vs 20-day average. **T** = today's full session (after 4PM ET). **P** = previous session (during the day, when current volume is still accumulating) |
 | 5D | 5-day price trend direction |
 | vs20D | % distance from 20-day moving average |
 | 50D / 20W / 10M / 20M | Above (▲) or below (▼) each moving average |

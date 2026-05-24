@@ -9,7 +9,7 @@ Disclaimer: For informational purposes only. Not financial advice.
 
 import yfinance as yf
 import warnings, json, os, time, webbrowser
-from datetime import datetime
+from datetime import datetime, date
 from concurrent.futures import ThreadPoolExecutor, as_completed
 warnings.filterwarnings('ignore')
 
@@ -22,6 +22,31 @@ except ImportError:
         # Approximate ET (UTC-4 EDT / UTC-5 EST) — install tzdata for accuracy
         offset = timedelta(hours=-4)
         return datetime.now(timezone(offset))
+
+# NYSE holidays 2025–2026
+NYSE_HOLIDAYS = {
+    date(2025, 1, 1), date(2025, 1, 20), date(2025, 2, 17),
+    date(2025, 4, 18), date(2025, 5, 26), date(2025, 6, 19),
+    date(2025, 7, 4), date(2025, 9, 1), date(2025, 11, 27),
+    date(2025, 12, 25),
+    date(2026, 1, 1), date(2026, 1, 19), date(2026, 2, 16),
+    date(2026, 4, 3), date(2026, 5, 25), date(2026, 6, 19),
+    date(2026, 7, 3), date(2026, 9, 7), date(2026, 11, 26),
+    date(2026, 12, 25),
+}
+
+def market_status():
+    """Returns (is_open, reason). Always non-blocking — just warns."""
+    et = _et_now()
+    weekday = et.weekday()
+    today = et.date()
+    if weekday == 5: return False, 'Saturday — markets closed'
+    if weekday == 6: return False, 'Sunday — markets closed'
+    if today in NYSE_HOLIDAYS: return False, 'NYSE holiday — markets closed today'
+    if et.hour < 9 or (et.hour == 9 and et.minute < 30):
+        return False, f'Pre-market — opens 9:30 AM ET'
+    if et.hour >= 16: return False, 'After hours — closed at 4:00 PM ET'
+    return True, 'Market open'
 
 CACHE_FILE = os.path.expanduser('~/.dashboard_cache.json')
 CACHE_TTL  = 900  # 15 minutes
@@ -179,7 +204,7 @@ def ma_html(v):
     c = '#3fb950' if v > 0 else '#f85149'
     return f'<span style="color:{c}">{v:+.1f}%</span>'
 
-def build_html(data):
+def build_html(data, is_open=True, status_msg=''):
     now  = datetime.now().strftime('%B %d, %Y  %H:%M')
     rows = ''
     for group, tickers in GROUPS:
@@ -223,11 +248,13 @@ def build_html(data):
   .ticker {{ font-weight: 700; color: #e6edf3; }}
   .legend {{ color: #484f58; font-size: 10px; margin-top: 16px; line-height: 1.8; }}
   .disclaimer {{ color: #484f58; font-size: 10px; margin-top: 8px; border-top: 1px solid #21262d; padding-top: 8px; }}
+  .market-closed {{ background: #2d1f00; border: 1px solid #e3b341; color: #e3b341; font-size: 11px; padding: 8px 12px; border-radius: 6px; margin-bottom: 16px; }}
 </style>
 </head>
 <body>
 <h1>Market Selective Briefing</h1>
 <div class="subtitle">{now}</div>
+{'<div class="market-closed">⚠ ' + status_msg + ' — showing last available data</div>' if not is_open else ''}
 <table>
   <thead>
     <tr>
@@ -249,12 +276,14 @@ def build_html(data):
 </body>
 </html>"""
 
-def print_dashboard(data):
+def print_dashboard(data, is_open, status_msg):
     now = datetime.now().strftime('%b %d %Y  %H:%M')
     w   = 95
     hdr = f"  {'TICKER':<6}  {'THEME':<10}  {'PRICE':>7}  {'DAY%':>8}  {'VOL/AVG':>10}  {'5D':>2}  {'vs20D':>6}   50D  20W  10M  20M   MOM   SIGNAL"
     print()
     print(f"  {B}MARKET SELECTIVE BRIEFING  —  {now}{RS}")
+    if not is_open:
+        print(f"  {Y}⚠  {status_msg} — showing last available data{RS}")
     print('─' * w)
     print(hdr)
 
@@ -286,6 +315,7 @@ def print_dashboard(data):
 
 if __name__ == '__main__':
     import sys
+    is_open, status_msg = market_status()
     force = '--refresh' in sys.argv
     cache = {} if force else load_cache()
     if cache:
@@ -305,10 +335,10 @@ if __name__ == '__main__':
         print()
         save_cache({k: v for k, v in data.items() if v})
 
-    print_dashboard(data)
+    print_dashboard(data, is_open, status_msg)
 
     path = os.path.expanduser('~/market_briefing.html')
     with open(path, 'w') as f:
-        f.write(build_html(data))
+        f.write(build_html(data, is_open, status_msg))
     print(f"  Saved → {path}")
     webbrowser.open(f'file://{path}')

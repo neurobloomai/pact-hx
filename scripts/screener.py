@@ -28,13 +28,13 @@ UNIVERSE = [
     'ROL','CTAS','CPRT','ADP','PAYX','EFX','TRI','IHS','VRSK','IT',
     'MU','MPWR','MRVL','ITW','ROP','SYK','BSX','AMZN','APP',
     'MTD','MANH','FAST','MNST','POOL','NVR','DOCS','MKTX','ACGL',
-    'CHD','CL','HSY','TJX','GIS','NFLX','LULU','WSM','KMB',
+    'CHD','CL','HSY','TJX','GIS','NFLX','LULU','WSM','KMB','VRTX',
 ]
 
 # Future contenders — great businesses not yet qualifying, tracked separately
 WATCHLIST = [
     'PLTR','ALAB','CRWD','AXON','MELI','ARM','SNOW','BILL',
-    'MDB','NET','HUBS','TEAM','MKC','DPZ',
+    'MDB','NET','HUBS','TEAM','MKC','DPZ','GEV','CEG',
 ]
 
 def get_fundamentals(ticker):

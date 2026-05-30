@@ -211,10 +211,10 @@ class MemoryManager:
             base_importance += 0.1
         
         # Entity richness
-        base_importance += min(len(entities) * 0.05, 0.2)
-        
+        base_importance += min(len(entities or []) * 0.05, 0.2)
+
         # Topic diversity
-        base_importance += min(len(topics) * 0.03, 0.15)
+        base_importance += min(len(topics or []) * 0.03, 0.15)
         
         # Keyword significance
         important_keywords = ["important", "remember", "always", "never", "love", "hate"]

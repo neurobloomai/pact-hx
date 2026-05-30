@@ -23,42 +23,18 @@ from .version import __version__
 # Core primitives
 from .core.base_primitive import PACTPrimitive, PACTConfig
 
-# Personalization layer (existing work)
-from .personalization.attention import AttentionManager
-from .personalization.memory import MemoryManager
-from .personalization.tone_adapt import ToneAdaptationManager
-from .personalization.value_align import ValueAlignmentManager
-
-# Expression layer (new work)
-from .expression.base import ExpressionContext, Domain, CommunicationStyle
-from .expression.orchestrator import ExpressionOrchestrator
-from .expression.customer_care import CustomerCareExpression, CustomerCareEscalation
-from .expression.mental_health import MentalHealthExpression, TherapeuticSafety
-from .expression.voice_ai import VoiceAIExpression, VoiceConfidenceIndicators
+# Memory primitive
+from .primitives.memory.manager import MemoryManager
+from .primitives.memory.schemas import (
+    MemoryEntry, MemoryType, EmotionalValence,
+)
 
 __all__ = [
-    # Version
     "__version__",
-    
-    # Core
     "PACTPrimitive",
     "PACTConfig",
-    
-    # Personalization
-    "AttentionManager",
     "MemoryManager",
-    "ToneAdaptationManager",
-    "ValueAlignmentManager",
-    
-    # Expression
-    "ExpressionOrchestrator",
-    "ExpressionContext",
-    "Domain",
-    "CommunicationStyle",
-    "CustomerCareExpression",
-    "CustomerCareEscalation",
-    "MentalHealthExpression",
-    "TherapeuticSafety",
-    "VoiceAIExpression",
-    "VoiceConfidenceIndicators",
+    "MemoryEntry",
+    "MemoryType",
+    "EmotionalValence",
 ]

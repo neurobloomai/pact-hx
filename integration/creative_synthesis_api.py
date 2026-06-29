@@ -34,8 +34,8 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 
 class LearningContext(BaseModel):
-    """Student learning context and preferences"""
-    student_id: str
+    """Participant learning context and preferences"""
+    participant_id: str
     session_id: str
     subject: str
     grade_level: str
@@ -65,7 +65,7 @@ class ExperienceRequest(BaseModel):
 class GeneratedExperience(BaseModel):
     """Generated educational experience response"""
     experience_id: str
-    student_id: str
+    participant_id: str
     content_type: str
     topic: str
     content: Dict[str, Any]
@@ -106,7 +106,7 @@ class CreativeSynthesisEngine:
         
         experience = GeneratedExperience(
             experience_id=experience_id,
-            student_id=request.context.student_id,
+            participant_id=request.context.participant_id,
             content_type=request.content_type,
             topic=request.topic,
             content=content,
@@ -116,7 +116,7 @@ class CreativeSynthesisEngine:
         )
         
         self.active_experiences[experience_id] = experience
-        logger.info(f"Generated experience {experience_id} for student {request.context.student_id}")
+        logger.info(f"Generated experience {experience_id} for participant {request.context.participant_id}")
         
         return experience
     
@@ -315,11 +315,11 @@ class CreativeSynthesisEngine:
     async def _generate_adaptation_reasoning(self, trigger: AdaptationTrigger) -> str:
         """Generate human-readable reasoning for adaptation"""
         reasoning_map = {
-            "engagement_drop": "Student engagement decreased, adding interactive elements and simplifying content",
+            "engagement_drop": "Participant engagement decreased, adding interactive elements and simplifying content",
             "confusion_detected": "Confusion signals detected, providing additional support and examples",
-            "mastery_achieved": "Student has mastered current level, providing advanced challenges"
+            "mastery_achieved": "Participant has mastered current level, providing advanced challenges"
         }
-        return reasoning_map.get(trigger.trigger_type, "Adapting based on student needs")
+        return reasoning_map.get(trigger.trigger_type, "Adapting based on participant needs")
 
 # ============================================================================
 # WebSocket Connection Manager
@@ -330,38 +330,38 @@ class ConnectionManager:
     
     def __init__(self):
         self.active_connections: Dict[str, WebSocket] = {}
-        self.student_sessions: Dict[str, str] = {}  # student_id -> session_id
+        self.participant_sessions: Dict[str, str] = {}  # participant_id -> session_id
     
-    async def connect(self, websocket: WebSocket, student_id: str, session_id: str):
+    async def connect(self, websocket: WebSocket, participant_id: str, session_id: str):
         """Connect a new WebSocket client"""
         await websocket.accept()
-        connection_id = f"{student_id}_{session_id}"
+        connection_id = f"{participant_id}_{session_id}"
         self.active_connections[connection_id] = websocket
-        self.student_sessions[student_id] = session_id
+        self.participant_sessions[participant_id] = session_id
         logger.info(f"WebSocket connected: {connection_id}")
     
-    def disconnect(self, student_id: str):
+    def disconnect(self, participant_id: str):
         """Disconnect a WebSocket client"""
-        if student_id in self.student_sessions:
-            session_id = self.student_sessions[student_id]
-            connection_id = f"{student_id}_{session_id}"
+        if participant_id in self.participant_sessions:
+            session_id = self.participant_sessions[participant_id]
+            connection_id = f"{participant_id}_{session_id}"
             if connection_id in self.active_connections:
                 del self.active_connections[connection_id]
-            del self.student_sessions[student_id]
+            del self.participant_sessions[participant_id]
             logger.info(f"WebSocket disconnected: {connection_id}")
     
-    async def send_personal_message(self, message: dict, student_id: str):
-        """Send message to specific student"""
-        if student_id in self.student_sessions:
-            session_id = self.student_sessions[student_id]
-            connection_id = f"{student_id}_{session_id}"
+    async def send_personal_message(self, message: dict, participant_id: str):
+        """Send message to specific participant"""
+        if participant_id in self.participant_sessions:
+            session_id = self.participant_sessions[participant_id]
+            connection_id = f"{participant_id}_{session_id}"
             if connection_id in self.active_connections:
                 websocket = self.active_connections[connection_id]
                 try:
                     await websocket.send_text(json.dumps(message))
                 except Exception as e:
-                    logger.error(f"Error sending message to {student_id}: {e}")
-                    self.disconnect(student_id)
+                    logger.error(f"Error sending message to {participant_id}: {e}")
+                    self.disconnect(participant_id)
     
     async def broadcast(self, message: dict):
         """Broadcast message to all connected clients"""
@@ -377,8 +377,8 @@ class ConnectionManager:
         for connection_id in disconnected:
             parts = connection_id.split('_', 1)
             if len(parts) == 2:
-                student_id = parts[0]
-                self.disconnect(student_id)
+                participant_id = parts[0]
+                self.disconnect(participant_id)
 
 # ============================================================================
 # Global Instances
@@ -408,8 +408,8 @@ async def lifespan(app: FastAPI):
     for connection_id in list(connection_manager.active_connections.keys()):
         parts = connection_id.split('_', 1)
         if len(parts) == 2:
-            student_id = parts[0]
-            connection_manager.disconnect(student_id)
+            participant_id = parts[0]
+            connection_manager.disconnect(participant_id)
     logger.info("✅ Cleanup completed")
 
 # ============================================================================
@@ -451,7 +451,7 @@ async def root():
                 <li><strong>POST /adapt/{experience_id}</strong> - Adapt existing experience</li>
                 <li><strong>GET /experience/{experience_id}</strong> - Get experience details</li>
                 <li><strong>GET /health</strong> - API health check</li>
-                <li><strong>WebSocket /ws/{student_id}/{session_id}</strong> - Real-time updates</li>
+                <li><strong>WebSocket /ws/{participant_id}/{session_id}</strong> - Real-time updates</li>
             </ul>
             <p><a href="/docs">📚 Interactive API Documentation</a></p>
             <p><a href="/redoc">📖 ReDoc Documentation</a></p>
@@ -482,7 +482,7 @@ async def generate_experience(request: ExperienceRequest, background_tasks: Back
                 "type": "experience_generated",
                 "experience": experience.dict()
             },
-            request.context.student_id
+            request.context.participant_id
         )
         
         return experience
@@ -496,7 +496,7 @@ async def adapt_experience(experience_id: str, trigger: AdaptationTrigger, backg
     try:
         adaptation = await synthesis_engine.adapt_experience(experience_id, trigger)
         
-        # Get student ID from experience
+        # Get participant ID from experience
         experience = synthesis_engine.active_experiences.get(experience_id)
         if experience:
             # Send real-time adaptation via WebSocket
@@ -507,7 +507,7 @@ async def adapt_experience(experience_id: str, trigger: AdaptationTrigger, backg
                     "adaptation": adaptation.dict(),
                     "experience_id": experience_id
                 },
-                experience.student_id
+                experience.participant_id
             )
         
         return adaptation
@@ -532,26 +532,26 @@ async def get_adaptations(experience_id: str):
     return {"experience_id": experience_id, "adaptations": adaptations}
 
 @app.get("/experiences")
-async def list_experiences(student_id: Optional[str] = None):
-    """List all active experiences, optionally filtered by student"""
+async def list_experiences(participant_id: Optional[str] = None):
+    """List all active experiences, optionally filtered by participant"""
     experiences = list(synthesis_engine.active_experiences.values())
-    if student_id:
-        experiences = [exp for exp in experiences if exp.student_id == student_id]
+    if participant_id:
+        experiences = [exp for exp in experiences if exp.participant_id == participant_id]
     return {"experiences": experiences}
 
 # ============================================================================
 # WebSocket Endpoint
 # ============================================================================
 
-@app.websocket("/ws/{student_id}/{session_id}")
-async def websocket_endpoint(websocket: WebSocket, student_id: str, session_id: str):
+@app.websocket("/ws/{participant_id}/{session_id}")
+async def websocket_endpoint(websocket: WebSocket, participant_id: str, session_id: str):
     """WebSocket endpoint for real-time updates"""
-    await connection_manager.connect(websocket, student_id, session_id)
+    await connection_manager.connect(websocket, participant_id, session_id)
     
     # Send welcome message
     await websocket.send_text(json.dumps({
         "type": "connection_established",
-        "student_id": student_id,
+        "participant_id": participant_id,
         "session_id": session_id,
         "timestamp": datetime.now().isoformat()
     }))
@@ -582,10 +582,10 @@ async def websocket_endpoint(websocket: WebSocket, student_id: str, session_id: 
                         }))
             
     except WebSocketDisconnect:
-        connection_manager.disconnect(student_id)
+        connection_manager.disconnect(participant_id)
     except Exception as e:
-        logger.error(f"WebSocket error for {student_id}: {e}")
-        connection_manager.disconnect(student_id)
+        logger.error(f"WebSocket error for {participant_id}: {e}")
+        connection_manager.disconnect(participant_id)
 
 # ============================================================================
 # Main Application Entry Point

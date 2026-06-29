@@ -18,7 +18,7 @@ const AdaptationEngine = require('./components/adaptation_engine');
 
 // Import API routes
 const sessionRoutes = require('./routes/sessions');
-const studentRoutes = require('./routes/students');
+const participantRoutes = require('./routes/participants');
 const adaptationRoutes = require('./routes/adaptations');
 const analyticsRoutes = require('./routes/analytics');
 
@@ -126,7 +126,7 @@ class PACTIntegrationServer {
 
     // API routes
     this.app.use('/api/sessions', sessionRoutes(this));
-    this.app.use('/api/students', studentRoutes(this));
+    this.app.use('/api/participants', participantRoutes(this));
     this.app.use('/api/adaptations', adaptationRoutes(this));
     this.app.use('/api/analytics', analyticsRoutes(this));
 
@@ -204,11 +204,11 @@ class PACTIntegrationServer {
         }
       });
 
-      socket.on('student_interaction', async (data) => {
+      socket.on('participant_interaction', async (data) => {
         try {
-          await this.dataCoordinator.handleStudentInteraction(socket, data);
+          await this.dataCoordinator.handleParticipantInteraction(socket, data);
         } catch (error) {
-          logger.error('Student interaction handling failed', { error: error.message, data });
+          logger.error('Participant interaction handling failed', { error: error.message, data });
         }
       });
 
@@ -223,14 +223,14 @@ class PACTIntegrationServer {
         }
       });
 
-      // Teacher dashboard requests
-      socket.on('teacher_request', async (data) => {
+      // Operator dashboard requests
+      socket.on('operator_request', async (data) => {
         try {
-          const response = await this.orchestrator.handleTeacherRequest(data);
-          socket.emit('teacher_response', response);
+          const response = await this.orchestrator.handleOperatorRequest(data);
+          socket.emit('operator_response', response);
         } catch (error) {
-          logger.error('Teacher request failed', { error: error.message, data });
-          socket.emit('teacher_error', { error: error.message });
+          logger.error('Operator request failed', { error: error.message, data });
+          socket.emit('operator_error', { error: error.message });
         }
       });
 
@@ -361,9 +361,9 @@ class PACTIntegrationServer {
         'session_start_request',
         'engagement_update',
         'trust_event',
-        'student_interaction',
+        'participant_interaction',
         'adaptation_request',
-        'teacher_request',
+        'operator_request',
         'component_heartbeat'
       ],
       server_to_client: [
@@ -371,7 +371,7 @@ class PACTIntegrationServer {
         'session_started',
         'engagement_update_processed',
         'adaptation_triggered',
-        'teacher_response',
+        'operator_response',
         'system_notification'
       ]
     };
@@ -383,7 +383,7 @@ class PACTIntegrationServer {
       { method: 'GET', path: '/status', description: 'Detailed system status' },
       { method: 'POST', path: '/api/sessions', description: 'Create new learning session' },
       { method: 'GET', path: '/api/sessions/:id', description: 'Get session details' },
-      { method: 'GET', path: '/api/students/:id/profile', description: 'Get unified student profile' },
+      { method: 'GET', path: '/api/participants/:id/profile', description: 'Get unified participant profile' },
       { method: 'POST', path: '/api/adaptations/trigger', description: 'Trigger manual adaptation' },
       { method: 'GET', path: '/api/analytics/classroom/:id', description: 'Get classroom analytics' }
     ];

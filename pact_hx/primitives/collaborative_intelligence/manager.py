@@ -8,7 +8,7 @@ purposeful, and educationally effective.
 
 Educational Mission:
 Designed specifically for the education domain pilot, this manager orchestrates
-learning experiences that adapt to each student's needs, learning style, and goals.
+learning experiences that adapt to each participant's needs, learning style, and goals.
 It coordinates multiple AI primitives to create cohesive, personalized educational
 journeys that enhance rather than replace human teaching and learning.
 
@@ -760,15 +760,15 @@ class EducationalSessionManager:
     
     async def _initialize_learning_pathway(self, session: CollaborationSessionSchema):
         """Initialize learning pathway for the session"""
-        student_info = None
+        participant_info = None
         for participant_id, participant_data in session.participants.items():
-            if participant_data.get("role") == "student":
-                student_info = participant_data
+            if participant_data.get("role") == "participant":
+                participant_info = participant_data
                 break
         
-        if student_info:
+        if participant_info:
             pathway = LearningPathwaySchema(
-                student_id=student_info.get("id", "unknown"),
+                participant_id=participant_info.get("id", "unknown"),
                 subject_area=session.educational_context.subject_area,
                 learning_objectives=session.educational_context.primary_learning_objectives,
                 collaborative_sessions=[session.session_id],
@@ -819,12 +819,12 @@ class EducationalSessionManager:
     
     async def _check_milestone_progress(self, pathway: LearningPathwaySchema,
                                        action_request: CollaborationActionRequest):
-        """Check if student has reached learning milestones"""
+        """Check if participant has reached learning milestones"""
         if pathway.success_rate > 0.8 and len(pathway.collaborative_sessions) > 5:
             pathway.completion_percentage = min(100.0, pathway.completion_percentage + 10.0)
             
             if pathway.completion_percentage >= 100.0:
-                logger.info(f"Learning pathway completed for student {pathway.student_id}")
+                logger.info(f"Learning pathway completed for participant {pathway.participant_id}")
     
     async def _check_adaptive_adjustments(self, session: CollaborationSessionSchema,
                                          action_result: Dict[str, Any]):
@@ -852,7 +852,7 @@ class EducationalSessionManager:
                 context={
                     "assessment_type": assessment_request.assessment_type,
                     "learning_objectives": assessment_request.learning_objectives,
-                    "student_id": assessment_request.student_id,
+                    "participant_id": assessment_request.participant_id,
                     "educational_context": asdict(session.educational_context)
                 }
             )
@@ -864,7 +864,7 @@ class EducationalSessionManager:
             if coordination_result["success"]:
                 assessment = EducationalAssessmentSchema(
                     session_id=session_id,
-                    student_id=assessment_request.student_id,
+                    participant_id=assessment_request.participant_id,
                     assessment_type=assessment_request.assessment_type,
                     subject_area=session.educational_context.subject_area,
                     learning_objectives=assessment_request.learning_objectives,
@@ -1241,8 +1241,8 @@ async def demo_educational_collaboration():
     # Create educational collaboration context
     print("\n2. Creating educational session...")
     educational_context = create_educational_collaboration_context(
-        student_profile={
-            "id": "student_123",
+        participant_profile={
+            "id": "participant_123",
             "name": "Alex",
             "grade_level": "10th",
             "learning_style": "visual_kinesthetic"
@@ -1259,8 +1259,8 @@ async def demo_educational_collaboration():
     
     # Initiate session
     session_request = InitiateCollaborationRequest(
-        collaboration_type=CollaborationType.STUDENT_AI,
-        participants={"student_123": {"role": "student", "name": "Alex"}},
+        collaboration_type=CollaborationType.PARTICIPANT_AI,
+        participants={"participant_123": {"role": "participant", "name": "Alex"}},
         educational_context=educational_context,
         session_goals=[
             "Master quadratic equations",
@@ -1290,7 +1290,7 @@ async def demo_educational_collaboration():
         },
         {
             "action_type": "provide_feedback",
-            "action_parameters": {"student_response": "I think I understand the basics", "encouragement": True}
+            "action_parameters": {"participant_response": "I think I understand the basics", "encouragement": True}
         },
         {
             "action_type": "generate_creative_exercise",
@@ -1301,7 +1301,7 @@ async def demo_educational_collaboration():
     for i, action_params in enumerate(educational_actions):
         action_request = CollaborationActionRequest(
             session_id=session_id,
-            requesting_participant="student_123",
+            requesting_participant="participant_123",
             **action_params
         )
         
@@ -1315,7 +1315,7 @@ async def demo_educational_collaboration():
     print("\n4. Conducting educational assessment...")
     assessment_request = EducationalAssessmentRequest(
         session_id=session_id,
-        student_id="student_123",
+        participant_id="participant_123",
         assessment_type="comprehensive_review",
         learning_objectives=["Understand quadratic equations", "Apply quadratic formula"]
     )

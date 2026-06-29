@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=45", "wheel", "setuptools_scm"]
+requires = ["setuptools>=45", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -42,8 +42,8 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/neurobloom/pact-hx"
-Repository = "https://github.com/neurobloom/pact-hx"
+Homepage = "https://github.com/neurobloomai/pact-hx"
+Repository = "https://github.com/neurobloomai/pact-hx"
 Documentation = "https://docs.neurobloom.ai/pact-hx"
 
 [tool.setuptools.packages.find]

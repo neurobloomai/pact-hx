@@ -31,19 +31,19 @@ class ComponentRegistry extends EventEmitter {
         description: '📊 The joy detection system that senses curiosity and excitement!',
         joyFactor: 'Turns data into celebration moments! 🎉'
       },
-      'student_interface': {
+      'participant_interface': {
         required: true,
         capabilities: ['content_display', 'interaction_capture', 'magic_delivery'],
         healthCheck: 'ping_with_sparkles',
-        description: '🎪 The magical learning playground where students discover and explore!',
+        description: '🎪 The magical learning playground where participants discover and explore!',
         joyFactor: 'Where learning adventures come alive! 🚀'
       },
-      'teacher_dashboard': {
+      'operator_dashboard': {
         required: false,
         capabilities: ['joy_analytics', 'classroom_celebration', 'insight_delivery'],
         healthCheck: 'get_celebration_status',
-        description: '👩‍🏫 The command center for celebrating student breakthroughs!',
-        joyFactor: 'Helps teachers witness and amplify the magic! 🌟'
+        description: '👩‍🏫 The command center for celebrating participant breakthroughs!',
+        joyFactor: 'Helps operators witness and amplify the magic! 🌟'
       },
       'empathetic_interaction': {
         required: false,

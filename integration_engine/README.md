@@ -7,19 +7,19 @@ Node.js server for real-time component coordination and orchestration.
 The Integration Engine serves as the **central orchestration layer** for the PACT system, coordinating real-time communication between:
 
 - **Creative Synthesis API** (Python/FastAPI)
-- **Student Interfaces** (Browser/JavaScript) 
-- **Teacher Dashboard** (Browser/JavaScript)
+- **Participant Interfaces** (Browser/JavaScript) 
+- **Operator Dashboard** (Browser/JavaScript)
 - **Demo Server** (Python/Flask)
 
 ## 🏗️ Architecture
 
 ```
 ┌─────────────────┐    WebSocket    ┌─────────────────┐
-│ Student Browser │◄──────────────►│                 │
+│ Participant Browser │◄──────────────►│                 │
 └─────────────────┘                 │                 │
                                     │  Integration    │    HTTP
 ┌─────────────────┐    WebSocket    │     Engine      │◄─────────►┌──────────────────┐
-│Teacher Dashboard│◄──────────────►│   (Node.js)     │           │Creative Synthesis│
+│Operator Dashboard│◄──────────────►│   (Node.js)     │           │Creative Synthesis│
 └─────────────────┘                 │                 │           │   API (Python)   │
                                     │  Port: 3000     │           └──────────────────┘
 ┌─────────────────┐    WebSocket    │                 │
@@ -96,12 +96,12 @@ socket.on('connect', () => {
 });
 ```
 
-### **Student Session Events**
+### **Participant Session Events**
 
 **Create Session:**
 ```javascript
-socket.emit('create_student_session', {
-    student_id: 'student_123',
+socket.emit('create_participant_session', {
+    participant_id: 'participant_123',
     name: 'Alex Chen',
     learning_style: 'visual',
     grade_level: '5th',
@@ -140,11 +140,11 @@ socket.emit('engagement_update', {
 });
 ```
 
-### **Teacher Dashboard Events**
+### **Operator Dashboard Events**
 
 **Join Dashboard:**
 ```javascript
-socket.emit('join_teacher_dashboard', {
+socket.emit('join_operator_dashboard', {
     classroomId: 'classroom_001'
 });
 
@@ -155,8 +155,8 @@ socket.on('classroom_data', (data) => {
 
 **Listen for Updates:**
 ```javascript
-socket.on('student_engagement_updated', (data) => {
-    console.log(`${data.studentName}: ${data.engagementLevel}`);
+socket.on('participant_engagement_updated', (data) => {
+    console.log(`${data.participantName}: ${data.engagementLevel}`);
 });
 
 socket.on('adaptation_event', (data) => {
@@ -249,13 +249,13 @@ Content-Type: application/json
 ### **Real-time Analytics**
 
 **Classroom Metrics:**
-- Average engagement across all students
-- Students struggling vs excelling counts
+- Average engagement across all participants
+- Participants struggling vs excelling counts
 - Adaptation rate and effectiveness
 - Total interactions and time on task
 
 **Individual Tracking:**
-- Per-student engagement trends
+- Per-participant engagement trends
 - Learning progress indicators  
 - Adaptation history and responses
 - Time-based activity patterns
@@ -413,8 +413,8 @@ pm2 start integration_engine.js -i max
 ## 🔗 Related Components
 
 - **Creative Synthesis API**: `../integration/creative_synthesis_api.py`
-- **Student Interface**: `../examples/integration_demos/demo.html`
-- **Teacher Dashboard**: `../frontend/teacher_dashboard.html`
+- **Participant Interface**: `../examples/integration_demos/demo.html`
+- **Operator Dashboard**: `../frontend/operator_dashboard.html`
 - **Demo Server**: `../examples/integration_demos/basic_pact_demo.py`
 
 ## 🎯 Next Steps

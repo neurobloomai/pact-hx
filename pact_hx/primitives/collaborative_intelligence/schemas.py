@@ -8,7 +8,7 @@ purposeful, and effective. This is the conductor of the PACT symphony.
 
 Educational Focus:
 Designed with education domain in mind, supporting:
-- Student-Teacher-AI triangular collaboration
+- Participant-Operator-AI triangular collaboration
 - Adaptive learning pathway orchestration
 - Multi-modal educational content coordination
 - Collaborative problem-solving workflows
@@ -43,13 +43,13 @@ import numpy as np
 
 class CollaborationType(str, Enum):
     """Types of collaborative interactions"""
-    STUDENT_AI = "student_ai"                    # Direct student-AI collaboration
-    TEACHER_AI = "teacher_ai"                    # Teacher-AI collaboration
-    STUDENT_TEACHER_AI = "student_teacher_ai"    # Three-way collaboration
+    PARTICIPANT_AI = "participant_ai"                    # Direct participant-AI collaboration
+    OPERATOR_AI = "operator_ai"                    # Operator-AI collaboration
+    PARTICIPANT_OPERATOR_AI = "participant_operator_ai"    # Three-way collaboration
     PEER_AI = "peer_ai"                          # Peer-to-peer with AI facilitation
     GROUP_AI = "group_ai"                        # Group learning with AI coordination
-    PARENT_STUDENT_AI = "parent_student_ai"      # Family learning collaboration
-    TUTOR_STUDENT_AI = "tutor_student_ai"        # Tutoring sessions
+    PARENT_PARTICIPANT_AI = "parent_participant_ai"      # Family learning collaboration
+    TUTOR_PARTICIPANT_AI = "tutor_participant_ai"        # Tutoring sessions
     RESEARCH_AI = "research_ai"                  # Research collaboration
 
 class EducationalContext(str, Enum):
@@ -67,11 +67,11 @@ class EducationalContext(str, Enum):
 
 class LearningMode(str, Enum):
     """Different modes of learning collaboration"""
-    GUIDED_DISCOVERY = "guided_discovery"        # AI guides student discovery
+    GUIDED_DISCOVERY = "guided_discovery"        # AI guides participant discovery
     SOCRATIC_METHOD = "socratic_method"          # Question-based learning
     COLLABORATIVE_PROBLEM_SOLVING = "collaborative_problem_solving"
     ADAPTIVE_INSTRUCTION = "adaptive_instruction" # Personalized instruction
-    PEER_LEARNING = "peer_learning"              # Student-to-student learning
+    PEER_LEARNING = "peer_learning"              # Participant-to-participant learning
     EXPERIENTIAL = "experiential"                # Learning by doing
     REFLECTIVE = "reflective"                    # Reflection-based learning
     GAMIFIED = "gamified"                        # Game-based learning
@@ -169,8 +169,8 @@ class PrimitiveStateSchema(BaseModel):
 class EducationalCollaborationContextSchema(BaseModel):
     """Schema for educational collaboration context"""
     # Participant information
-    student_profile: Dict[str, Any] = Field(default_factory=dict, description="Student characteristics")
-    teacher_profile: Optional[Dict[str, Any]] = Field(None, description="Teacher characteristics")
+    participant_profile: Dict[str, Any] = Field(default_factory=dict, description="Participant characteristics")
+    operator_profile: Optional[Dict[str, Any]] = Field(None, description="Operator characteristics")
     peer_profiles: List[Dict[str, Any]] = Field(default_factory=list, description="Peer characteristics")
     
     # Educational setting
@@ -308,7 +308,7 @@ class CollaborationSessionSchema(BaseCollaborationModel):
 class LearningPathwaySchema(BaseCollaborationModel):
     """Schema for adaptive learning pathway management"""
     pathway_id: str = Field(default_factory=lambda: f"pathway_{uuid4()}")
-    student_id: str = Field(..., description="Student identifier")
+    participant_id: str = Field(..., description="Participant identifier")
     subject_area: str = Field(..., description="Academic subject")
     
     # Pathway structure
@@ -332,7 +332,7 @@ class LearningPathwaySchema(BaseCollaborationModel):
     
     # Personalization
     learning_style_profile: Dict[str, Any] = Field(default_factory=dict, description="Learning style information")
-    strength_areas: List[str] = Field(default_factory=list, description="Student's strength areas")
+    strength_areas: List[str] = Field(default_factory=list, description="Participant's strength areas")
     improvement_areas: List[str] = Field(default_factory=list, description="Areas for improvement")
     
     last_updated: datetime = Field(default_factory=datetime.now)
@@ -341,7 +341,7 @@ class EducationalAssessmentSchema(BaseCollaborationModel):
     """Schema for educational assessments and evaluations"""
     assessment_id: str = Field(default_factory=lambda: f"assessment_{uuid4()}")
     session_id: str = Field(..., description="Associated collaboration session")
-    student_id: str = Field(..., description="Student being assessed")
+    participant_id: str = Field(..., description="Participant being assessed")
     
     # Assessment details
     assessment_type: str = Field(..., description="Type of assessment")
@@ -440,7 +440,7 @@ class PrimitiveCoordinationRequest(BaseModel):
 class EducationalAssessmentRequest(BaseModel):
     """Request for educational assessment"""
     session_id: str = Field(..., description="Session to assess")
-    student_id: str = Field(..., description="Student to assess")
+    participant_id: str = Field(..., description="Participant to assess")
     assessment_type: str = Field(..., description="Type of assessment")
     learning_objectives: List[str] = Field(..., description="Objectives to assess")
     assessment_criteria: List[str] = Field(default_factory=list, description="Assessment criteria")
@@ -448,7 +448,7 @@ class EducationalAssessmentRequest(BaseModel):
 
 class LearningPathwayRequest(BaseModel):
     """Request for learning pathway management"""
-    student_id: str = Field(..., description="Target student")
+    participant_id: str = Field(..., description="Target participant")
     subject_area: str = Field(..., description="Academic subject")
     current_level: Optional[str] = Field(None, description="Current skill level")
     learning_goals: List[str] = Field(..., description="Learning goals")
@@ -460,14 +460,14 @@ class LearningPathwayRequest(BaseModel):
 # ============================================================================
 
 def create_educational_collaboration_context(
-    student_profile: Dict[str, Any],
+    participant_profile: Dict[str, Any],
     subject_area: str,
     learning_objectives: List[str],
     **kwargs
 ) -> EducationalCollaborationContextSchema:
     """Factory function to create educational collaboration context"""
     return EducationalCollaborationContextSchema(
-        student_profile=student_profile,
+        participant_profile=participant_profile,
         educational_context=kwargs.get("educational_context", EducationalContext.ONLINE_LEARNING),
         subject_area=subject_area,
         learning_mode=kwargs.get("learning_mode", LearningMode.ADAPTIVE_INSTRUCTION),
@@ -621,15 +621,15 @@ def suggest_primitive_roles(
             role_suggestions[primitive] = [PrimitiveRole.CONTENT_PROVIDER]
     
     # Adjust based on collaboration type
-    if collaboration_type == CollaborationType.STUDENT_AI:
-        # Student-AI collaboration emphasizes personalization and support
+    if collaboration_type == CollaborationType.PARTICIPANT_AI:
+        # Participant-AI collaboration emphasizes personalization and support
         if "empathetic_interaction" in role_suggestions:
             role_suggestions["empathetic_interaction"].append(PrimitiveRole.PRIMARY_ORCHESTRATOR)
         if "adaptive_reasoning" in role_suggestions:
             role_suggestions["adaptive_reasoning"].append(PrimitiveRole.CONTENT_PROVIDER)
     
-    elif collaboration_type == CollaborationType.TEACHER_AI:
-        # Teacher-AI collaboration emphasizes assessment and planning
+    elif collaboration_type == CollaborationType.OPERATOR_AI:
+        # Operator-AI collaboration emphasizes assessment and planning
         if "meta_learning" in role_suggestions:
             role_suggestions["meta_learning"].extend([PrimitiveRole.SKILL_ASSESSOR, PrimitiveRole.CONTENT_PROVIDER])
         if "goal" in role_suggestions:
@@ -792,9 +792,9 @@ class EducationalCollaborationPatterns:
             },
             "interaction_rules": [
                 "Ask probing questions rather than providing direct answers",
-                "Guide student to discover answers through reasoning",
+                "Guide participant to discover answers through reasoning",
                 "Provide encouragement and support throughout process",
-                "Help student reflect on learning process"
+                "Help participant reflect on learning process"
             ]
         }
     
@@ -844,7 +844,7 @@ class EducationalCollaborationPatterns:
                 "continuous_adaptation": [PrimitiveRole.ADAPTATION_ENGINE]
             },
             "interaction_rules": [
-                "Adapt to student's learning pace and style",
+                "Adapt to participant's learning pace and style",
                 "Provide personalized feedback and encouragement",
                 "Monitor emotional state and adjust approach",
                 "Focus on building confidence and understanding"
@@ -866,7 +866,7 @@ class EducationalCollaborationPatterns:
         elif learning_mode == LearningMode.COLLABORATIVE_PROBLEM_SOLVING:
             return EducationalCollaborationPatterns.get_collaborative_project_pattern()
         
-        elif collaboration_type == CollaborationType.STUDENT_AI and educational_context == EducationalContext.TUTORING:
+        elif collaboration_type == CollaborationType.PARTICIPANT_AI and educational_context == EducationalContext.TUTORING:
             return EducationalCollaborationPatterns.get_personalized_tutoring_pattern()
         
         else:

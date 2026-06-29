@@ -14,7 +14,7 @@
 class PACTEngagementTracker {
     constructor(config = {}) {
         this.config = {
-            studentId: config.studentId || 'anonymous',
+            participantId: config.participantId || 'anonymous',
             sessionId: config.sessionId || this.generateSessionId(),
             apiEndpoint: config.apiEndpoint || 'http://localhost:8000',
             websocketEndpoint: config.websocketEndpoint || 'ws://localhost:8000',
@@ -171,7 +171,7 @@ class PACTEngagementTracker {
     }
     
     connectWebSocket() {
-        const wsUrl = `${this.config.websocketEndpoint}/ws/${this.config.studentId}/${this.config.sessionId}`;
+        const wsUrl = `${this.config.websocketEndpoint}/ws/${this.config.participantId}/${this.config.sessionId}`;
         
         try {
             this.websocket = new WebSocket(wsUrl);
@@ -386,7 +386,7 @@ class PACTEngagementTracker {
     
     async sendMetricsToAPI() {
         const metricsData = {
-            student_id: this.config.studentId,
+            participant_id: this.config.participantId,
             session_id: this.config.sessionId,
             experience_id: this.experienceId,
             timestamp: new Date().toISOString(),
@@ -600,7 +600,7 @@ if (typeof module !== 'undefined' && module.exports) {
 /*
 // Basic initialization
 const tracker = new PACTEngagementTracker({
-    studentId: 'student_123',
+    participantId: 'participant_123',
     apiEndpoint: 'http://localhost:8000',
     debugMode: true
 });

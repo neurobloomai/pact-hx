@@ -14,7 +14,7 @@ class SessionManager extends EventEmitter {
     // Session storage - where learning adventures live! 🏰
     this.activeSessions = new Map();
     this.sessionHistory = new Map();
-    this.studentSessions = new Map(); // studentId -> Set of sessionIds
+    this.participantSessions = new Map(); // participantId -> Set of sessionIds
     
     // Session timeouts and cleanup
     this.sessionTimeouts = new Map();
@@ -30,9 +30,9 @@ class SessionManager extends EventEmitter {
 
   async createSession(sessionData) {
     const {
-      studentId,
+      participantId,
       classId,
-      teacherId,
+      operatorId,
       learningObjective,
       subject,
       timeLimit = 30, // Default 30 minutes
@@ -44,26 +44,26 @@ class SessionManager extends EventEmitter {
     const sessionId = this.generateMagicalSessionId();
 
     logger.session(sessionId, 'creating', {
-      studentId,
+      participantId,
       classId,
-      teacherId,
+      operatorId,
       learningObjective,
       subject,
       joyGoal
     });
 
     try {
-      // Get student's learning profile and history
-      const studentProfile = await this.getStudentLearningProfile(studentId);
-      const sessionHistory = await this.getStudentSessionHistory(studentId);
+      // Get participant's learning profile and history
+      const participantProfile = await this.getParticipantLearningProfile(participantId);
+      const sessionHistory = await this.getParticipantSessionHistory(participantId);
 
       // Create the session with extra magical properties ✨
       const session = {
         // Basic session info
         sessionId,
-        studentId,
+        participantId,
         classId,
-        teacherId,
+        operatorId,
         learningObjective,
         subject,
         
@@ -87,11 +87,11 @@ class SessionManager extends EventEmitter {
         
         // Personalization
         personalizedApproach,
-        studentProfile,
+        participantProfile,
         sessionContext: {
-          isFirstTimeStudent: sessionHistory.length === 0,
+          isFirstTimeParticipant: sessionHistory.length === 0,
           previousSessionCount: sessionHistory.length,
-          preferredLearningStyle: studentProfile?.preferredStyle || 'mixed',
+          preferredLearningStyle: participantProfile?.preferredStyle || 'mixed',
           currentEnergyLevel: 'fresh', // fresh, focused, tired, excited
           socialContext: 'individual' // individual, small_group, whole_class
         },
@@ -116,11 +116,11 @@ class SessionManager extends EventEmitter {
       // Store the session
       this.activeSessions.set(sessionId, session);
       
-      // Track student sessions
-      if (!this.studentSessions.has(studentId)) {
-        this.studentSessions.set(studentId, new Set());
+      // Track participant sessions
+      if (!this.participantSessions.has(participantId)) {
+        this.participantSessions.set(participantId, new Set());
       }
-      this.studentSessions.get(studentId).add(sessionId);
+      this.participantSessions.get(participantId).add(sessionId);
 
       // Set up session timeout
       this.setupSessionTimeout(sessionId);
@@ -140,7 +140,7 @@ class SessionManager extends EventEmitter {
       this.emit('session_created', session);
 
       logger.session(sessionId, 'created', {
-        studentId,
+        participantId,
         learningObjective,
         experienceTitle: initialExperience?.title,
         magicInitialized: true,
@@ -165,7 +165,7 @@ class SessionManager extends EventEmitter {
     } catch (error) {
       logger.error('Session creation failed', {
         sessionId,
-        studentId,
+        participantId,
         error: error.message
       });
 
@@ -195,7 +195,7 @@ class SessionManager extends EventEmitter {
     return {
       sessionId,
       basicInfo: {
-        studentId: session.studentId,
+        participantId: session.participantId,
         subject: session.subject,
         learningObjective: session.learningObjective,
         status: session.status
@@ -322,9 +322,9 @@ class SessionManager extends EventEmitter {
       this.sessionHistory.set(sessionId, session);
       this.activeSessions.delete(sessionId);
 
-      // Clean up student session tracking
-      if (this.studentSessions.has(session.studentId)) {
-        this.studentSessions.get(session.studentId).delete(sessionId);
+      // Clean up participant session tracking
+      if (this.participantSessions.has(session.participantId)) {
+        this.participantSessions.get(session.participantId).delete(sessionId);
       }
 
       // Clean up joy moments
@@ -383,7 +383,7 @@ class SessionManager extends EventEmitter {
 
     logger.pactEvent('joy_moment', {
       sessionId,
-      studentId: session.studentId,
+      participantId: session.participantId,
       joyType: joyMoment.type,
       joyLevel: session.currentJoyLevel,
       message: joyMoment.message
@@ -398,11 +398,11 @@ class SessionManager extends EventEmitter {
 
     const celebration = {
       sessionId,
-      studentId: session.studentId,
+      participantId: session.participantId,
       timestamp: new Date(),
       trigger: triggerMoment,
       celebrationLevel: session.currentJoyLevel > 0.9 ? 'epic' : 'wonderful',
-      message: `🎊 Celebration #${session.celebrationCount} for ${session.studentId}! 🎊`
+      message: `🎊 Celebration #${session.celebrationCount} for ${session.participantId}! 🎊`
     };
 
     this.celebrationQueue.push(celebration);
@@ -417,8 +417,8 @@ class SessionManager extends EventEmitter {
     try {
       // Request from orchestrator
       if (this.server.orchestrator) {
-        return await this.server.orchestrator.orchestratePersonalizedLearning(
-          session.studentId,
+        return await this.server.orchestrator.orchestratePersonalizedSession(
+          session.participantId,
           session.learningObjective,
           session.sessionContext
         );
@@ -449,7 +449,7 @@ class SessionManager extends EventEmitter {
                        { emoji: '✨', adventure: 'Learning Adventure' };
 
     return {
-      title: `${subjectInfo.emoji} ${session.studentId}'s ${subjectInfo.adventure}`,
+      title: `${subjectInfo.emoji} ${session.participantId}'s ${subjectInfo.adventure}`,
       description: `Let's explore ${session.learningObjective} together!`,
       type: 'adaptive_exploration',
       estimatedDuration: session.timeLimit / 60000, // Convert to minutes
@@ -519,7 +519,7 @@ class SessionManager extends EventEmitter {
 
     return {
       sessionId: session.sessionId,
-      studentId: session.studentId,
+      participantId: session.participantId,
       subject: session.subject,
       learningObjective: session.learningObjective,
       outcome,
@@ -539,14 +539,14 @@ class SessionManager extends EventEmitter {
 
     // Joy pattern analysis
     if (joyMoments.length > 5) {
-      insights.push('🎊 This student experienced many joyful learning moments!');
+      insights.push('🎊 This participant experienced many joyful learning moments!');
     }
 
     // Engagement pattern analysis
     if (session.adaptationHistory.length === 0) {
-      insights.push('✨ No adaptations needed - student was perfectly engaged throughout!');
+      insights.push('✨ No adaptations needed - participant was perfectly engaged throughout!');
     } else if (session.adaptationHistory.length > 3) {
-      insights.push('🔄 Student benefited from personalized adaptations to stay engaged');
+      insights.push('🔄 Participant benefited from personalized adaptations to stay engaged');
     }
 
     // Celebration analysis
@@ -558,7 +558,7 @@ class SessionManager extends EventEmitter {
     if (finalJoyLevel > 0.8) {
       insights.push('🚀 Ended on a high note with excellent joy and engagement!');
     } else if (finalJoyLevel < 0.4) {
-      insights.push('💝 Student may benefit from different approaches next time');
+      insights.push('💝 Participant may benefit from different approaches next time');
     }
 
     return insights;
@@ -569,10 +569,10 @@ class SessionManager extends EventEmitter {
 
     // Based on outcome
     if (outcome === 'magical') {
-      recommendations.push('🌟 Student is ready for more challenging content');
+      recommendations.push('🌟 Participant is ready for more challenging content');
       recommendations.push('👥 Consider peer collaboration or leadership opportunities');
     } else if (outcome === 'good' || outcome === 'wonderful') {
-      recommendations.push('✨ Continue with similar approaches - they work well for this student');
+      recommendations.push('✨ Continue with similar approaches - they work well for this participant');
       recommendations.push('🎯 Gradually introduce more interactive elements');
     } else {
       recommendations.push('💝 Try more kinesthetic or hands-on approaches next time');
@@ -602,17 +602,17 @@ class SessionManager extends EventEmitter {
     const notification = {
       type: 'session_started',
       sessionId: session.sessionId,
-      studentId: session.studentId,
+      participantId: session.participantId,
       learningObjective: session.learningObjective,
       joyGoal: session.joyGoal,
-      welcomeMessage: `🎊 New learning adventure starting for ${session.studentId}! 🎊`
+      welcomeMessage: `🎊 New learning adventure starting for ${session.participantId}! 🎊`
     };
 
     this.server.io.emit('session_notification', notification);
     
     logger.pactEvent('session_started_notification', {
       sessionId: session.sessionId,
-      studentId: session.studentId,
+      participantId: session.participantId,
       componentsNotified: this.server.componentRegistry.getRegisteredComponents().length
     });
   }
@@ -621,7 +621,7 @@ class SessionManager extends EventEmitter {
     const notification = {
       type: 'session_completed',
       sessionId: session.sessionId,
-      studentId: session.studentId,
+      participantId: session.participantId,
       summary: summary,
       celebrationMessage: summary.celebrationMessage
     };
@@ -663,9 +663,9 @@ class SessionManager extends EventEmitter {
 
   generateWelcomeMessage(session) {
     const welcomeMessages = [
-      `🌟 Welcome to your ${session.subject} adventure, ${session.studentId}! Let's discover amazing things together!`,
+      `🌟 Welcome to your ${session.subject} adventure, ${session.participantId}! Let's discover amazing things together!`,
       `🚀 Ready for an exciting learning journey? Your ${session.subject} quest begins now!`,
-      `✨ Hello ${session.studentId}! I'm excited to explore ${session.subject} with you today!`,
+      `✨ Hello ${session.participantId}! I'm excited to explore ${session.subject} with you today!`,
       `🎉 Let's make today's ${session.subject} session absolutely magical!`
     ];
 
@@ -753,40 +753,40 @@ class SessionManager extends EventEmitter {
     return totalJoy / activeSessions.length;
   }
 
-  async getStudentSessionHistory(studentId) {
-    // Get active sessions for this student
+  async getParticipantSessionHistory(participantId) {
+    // Get active sessions for this participant
     const activeSessions = Array.from(this.activeSessions.values())
-      .filter(session => session.studentId === studentId);
+      .filter(session => session.participantId === participantId);
 
     // Get completed sessions from history
     const completedSessions = Array.from(this.sessionHistory.values())
-      .filter(session => session.studentId === studentId);
+      .filter(session => session.participantId === participantId);
 
     return [...completedSessions, ...activeSessions]
       .sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
   }
 
-  async getStudentLearningProfile(studentId) {
+  async getParticipantLearningProfile(participantId) {
     try {
       // Try to get from data coordinator
       if (this.server.dataCoordinator) {
-        return await this.server.dataCoordinator.getUnifiedStudentProfile(studentId);
+        return await this.server.dataCoordinator.getUnifiedParticipantProfile(participantId);
       }
 
       // Fallback: create basic profile
-      return this.createBasicStudentProfile(studentId);
+      return this.createBasicParticipantProfile(participantId);
     } catch (error) {
-      logger.warn('Failed to get student profile, using basic profile', {
-        studentId,
+      logger.warn('Failed to get participant profile, using basic profile', {
+        participantId,
         error: error.message
       });
-      return this.createBasicStudentProfile(studentId);
+      return this.createBasicParticipantProfile(participantId);
     }
   }
 
-  createBasicStudentProfile(studentId) {
+  createBasicParticipantProfile(participantId) {
     return {
-      studentId,
+      participantId,
       preferredStyle: 'mixed',
       joyPreferences: ['celebration', 'discovery', 'collaboration'],
       learningHistory: {
@@ -871,7 +871,7 @@ class SessionManager extends EventEmitter {
 
     // Clear data
     this.activeSessions.clear();
-    this.studentSessions.clear();
+    this.participantSessions.clear();
     this.sessionJoyMoments.clear();
     this.celebrationQueue = [];
 

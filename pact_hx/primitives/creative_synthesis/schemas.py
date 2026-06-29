@@ -104,7 +104,7 @@ class EngagementFactor(str, Enum):
     HUMOR = "humor"                      # Fun and laughter
     CHALLENGE = "challenge"              # Appropriate difficulty
     RELEVANCE = "relevance"              # Personal connection
-    AGENCY = "agency"                    # Student control and choice
+    AGENCY = "agency"                    # Participant control and choice
     MASTERY = "mastery"                  # Skill development
     PURPOSE = "purpose"                  # Meaningful goals
     SOCIAL_CONNECTION = "social_connection"  # Peer interaction
@@ -117,7 +117,7 @@ class CreativeConstraint(str, Enum):
     TIME_LIMITED = "time_limited"        # Fits available time
     RESOURCE_CONSCIOUS = "resource_conscious"  # Uses available materials
     CULTURALLY_SENSITIVE = "culturally_sensitive"  # Respectful and inclusive
-    ATTENTION_SPAN = "attention_span"    # Matches student focus capacity
+    ATTENTION_SPAN = "attention_span"    # Matches participant focus capacity
     PRIOR_KNOWLEDGE = "prior_knowledge"  # Builds on existing understanding
     LEARNING_GOALS = "learning_goals"    # Serves educational objectives
     SAFETY_FOCUSED = "safety_focused"    # Physically and emotionally safe
@@ -149,10 +149,10 @@ class CreativeContextSchema(BaseModel):
     target_concepts: List[str] = Field(..., description="Key concepts to be learned")
     difficulty_level: str = Field(default="moderate", description="Complexity level")
     
-    # Student context
+    # Participant context
     age_group: str = Field(..., description="Target age group or grade level")
     learning_style_preferences: List[LearningModality] = Field(default_factory=list)
-    interests: List[str] = Field(default_factory=list, description="Student interests and hobbies")
+    interests: List[str] = Field(default_factory=list, description="Participant interests and hobbies")
     cultural_background: List[str] = Field(default_factory=list, description="Cultural considerations")
     prior_knowledge: Dict[str, str] = Field(default_factory=dict, description="Existing knowledge base")
     
@@ -224,7 +224,7 @@ class StoryBasedLearningSchema(BaseCreativeModel):
     
     # Engagement design
     cliffhangers: List[str] = Field(default_factory=list, description="Suspenseful moments")
-    student_choice_points: List[Dict[str, Any]] = Field(default_factory=list)
+    participant_choice_points: List[Dict[str, Any]] = Field(default_factory=list)
     problem_solving_moments: List[Dict[str, Any]] = Field(default_factory=list)
 
 class MetaphorMappingSchema(BaseCreativeModel):
@@ -273,7 +273,7 @@ class GameBasedLearningSchema(BaseCreativeModel):
     # Implementation
     technology_requirements: List[str] = Field(default_factory=list)
     physical_components: List[str] = Field(default_factory=list)
-    facilitator_role: Optional[str] = Field(None, description="Teacher/facilitator involvement")
+    facilitator_role: Optional[str] = Field(None, description="Operator/facilitator involvement")
 
 class VisualizationSchema(BaseCreativeModel):
     """Schema for creative visual representations"""
@@ -305,7 +305,7 @@ class ExperientialLearningSchema(BaseCreativeModel):
     
     # Experience design
     sensory_engagement: List[LearningModality] = Field(..., description="Senses involved")
-    physical_activities: List[Dict[str, Any]] = Field(..., description="What students physically do")
+    physical_activities: List[Dict[str, Any]] = Field(..., description="What participants physically do")
     exploration_opportunities: List[str] = Field(..., description="Open-ended discovery moments")
     
     # Learning through doing
@@ -468,11 +468,11 @@ class CreativeQualityAssessmentSchema(BaseCreativeModel):
     alternative_approaches: List[str] = Field(default_factory=list)
     follow_up_possibilities: List[str] = Field(default_factory=list)
 
-class StudentEngagementFeedbackSchema(BaseCreativeModel):
-    """Schema for capturing student feedback on creative content"""
+class ParticipantEngagementFeedbackSchema(BaseCreativeModel):
+    """Schema for capturing participant feedback on creative content"""
     feedback_id: str = Field(default_factory=lambda: f"feedback_{uuid4()}")
     output_id: str = Field(..., description="Creative output being reviewed")
-    student_id: Optional[str] = Field(None, description="Student providing feedback")
+    participant_id: Optional[str] = Field(None, description="Participant providing feedback")
     
     # Engagement metrics
     interest_level: float = Field(..., ge=0.0, le=1.0, description="How interesting")
@@ -611,8 +611,8 @@ def suggest_creative_enhancements(
         elif gap > 0.2:
             suggestions.extend([
                 "Add more surprising or unexpected elements",
-                "Increase student choice and agency in the experience",
-                "Connect to student interests and real-world relevance"
+                "Increase participant choice and agency in the experience",
+                "Connect to participant interests and real-world relevance"
             ])
         else:
             suggestions.extend([
@@ -791,7 +791,7 @@ class GameificationTechniques:
             "achievement_badges": "Recognize specific accomplishments",
             "leaderboards": "Create friendly competition",
             "quest_lines": "Chain related learning activities",
-            "choice_branching": "Give students meaningful choices",
+            "choice_branching": "Give participants meaningful choices",
             "resource_management": "Manage limited resources strategically",
             "collaborative_challenges": "Team-based problem solving",
             "mystery_solving": "Uncover hidden information through learning",
@@ -832,8 +832,8 @@ class EducationalImpactSchema(BaseCreativeModel):
     # Engagement metrics
     time_on_task: timedelta = Field(default=timedelta(0), description="Time spent engaged with content")
     completion_rate: float = Field(default=0.0, ge=0.0, le=1.0, description="Percentage who complete the experience")
-    voluntary_re_engagement: float = Field(default=0.0, ge=0.0, le=1.0, description="Students who choose to return")
-    peer_sharing: float = Field(default=0.0, ge=0.0, le=1.0, description="Students who share with others")
+    voluntary_re_engagement: float = Field(default=0.0, ge=0.0, le=1.0, description="Participants who choose to return")
+    peer_sharing: float = Field(default=0.0, ge=0.0, le=1.0, description="Participants who share with others")
     
     # Affective outcomes
     curiosity_increase: float = Field(default=0.0, ge=0.0, le=1.0, description="Growth in curiosity about subject")
@@ -848,7 +848,7 @@ class EducationalImpactSchema(BaseCreativeModel):
     # Measurement context
     measurement_method: str = Field(..., description="How impact was measured")
     measurement_timeframe: timedelta = Field(..., description="When impact was measured after experience")
-    sample_size: int = Field(..., ge=1, description="Number of students measured")
+    sample_size: int = Field(..., ge=1, description="Number of participants measured")
 
 # ============================================================================
 # Creative Collaboration Schemas
@@ -887,10 +887,10 @@ class PersonalizedCreativeSchema(BaseCreativeModel):
     """Schema for personalized creative content"""
     personalization_id: str = Field(default_factory=lambda: f"personal_{uuid4()}")
     base_content_id: str = Field(..., description="Original content being personalized")
-    target_student_profile: Dict[str, Any] = Field(..., description="Student this is personalized for")
+    target_participant_profile: Dict[str, Any] = Field(..., description="Participant this is personalized for")
     
     # Personalization factors
-    interest_alignment: Dict[str, str] = Field(..., description="How content connects to student interests")
+    interest_alignment: Dict[str, str] = Field(..., description="How content connects to participant interests")
     learning_style_adaptations: Dict[LearningModality, List[str]] = Field(default_factory=dict)
     cultural_connections: List[str] = Field(default_factory=list)
     difficulty_adjustments: Dict[str, Any] = Field(default_factory=dict)
@@ -903,7 +903,7 @@ class PersonalizedCreativeSchema(BaseCreativeModel):
     
     # Effectiveness tracking
     personalization_effectiveness: float = Field(default=0.0, ge=0.0, le=1.0)
-    student_resonance: float = Field(default=0.0, ge=0.0, le=1.0)
+    participant_resonance: float = Field(default=0.0, ge=0.0, le=1.0)
     engagement_improvement: float = Field(default=0.0, ge=0.0, le=1.0)
 
 # ============================================================================
@@ -928,7 +928,7 @@ __all__ = [
     "GameDesignRequest", "VisualizationRequest", "ExperienceDesignRequest",
     
     # Quality and Feedback Schemas
-    "CreativeQualityAssessmentSchema", "StudentEngagementFeedbackSchema",
+    "CreativeQualityAssessmentSchema", "ParticipantEngagementFeedbackSchema",
     "EducationalImpactSchema",
     
     # Collaboration and Personalization

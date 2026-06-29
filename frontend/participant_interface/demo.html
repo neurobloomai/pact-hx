@@ -48,14 +48,14 @@
             box-shadow: 0 8px 25px rgba(0,0,0,0.1);
         }
         
-        .student-selector {
+        .participant-selector {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 15px;
             margin-bottom: 20px;
         }
         
-        .student-card {
+        .participant-card {
             background: #f8f9fa;
             border: 2px solid transparent;
             border-radius: 8px;
@@ -65,24 +65,24 @@
             text-align: center;
         }
         
-        .student-card:hover {
+        .participant-card:hover {
             border-color: #667eea;
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
         }
         
-        .student-card.selected {
+        .participant-card.selected {
             border-color: #667eea;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
         }
         
-        .student-name {
+        .participant-name {
             font-weight: bold;
             margin-bottom: 5px;
         }
         
-        .student-details {
+        .participant-details {
             font-size: 0.9em;
             opacity: 0.8;
         }
@@ -335,7 +335,7 @@
                 padding: 10px;
             }
             
-            .student-selector {
+            .participant-selector {
                 grid-template-columns: 1fr;
             }
             
@@ -357,9 +357,9 @@
         </div>
         
         <div class="demo-controls">
-            <h2>Select Your Student Profile</h2>
-            <div class="student-selector" id="studentSelector">
-                <!-- Students will be populated by JavaScript -->
+            <h2>Select Your Participant Profile</h2>
+            <div class="participant-selector" id="participantSelector">
+                <!-- Participants will be populated by JavaScript -->
             </div>
             
             <div style="text-align: center; margin-top: 20px;">
@@ -374,7 +374,7 @@
         
         <div class="learning-content" id="learningContent">
             <div class="lesson-header">
-                <h2 class="lesson-title" id="lessonTitle">Select a student to begin</h2>
+                <h2 class="lesson-title" id="lessonTitle">Select a participant to begin</h2>
                 <div class="engagement-indicator">
                     <span>Engagement:</span>
                     <div class="engagement-bar">
@@ -386,7 +386,7 @@
             
             <div id="lessonContent">
                 <p style="text-align: center; color: #7f8c8d; font-size: 1.2em; margin-top: 100px;">
-                    Choose a student profile above to start your personalized learning experience
+                    Choose a participant profile above to start your personalized learning experience
                 </p>
             </div>
         </div>
@@ -429,10 +429,10 @@
             debugMode: true
         };
         
-        // Sample student profiles
-        const STUDENT_PROFILES = [
+        // Sample participant profiles
+        const PARTICIPANT_PROFILES = [
             {
-                id: 'student_001',
+                id: 'participant_001',
                 name: 'Alex Chen',
                 grade: '5th Grade',
                 style: 'Visual Learner',
@@ -444,7 +444,7 @@
                 }
             },
             {
-                id: 'student_002',
+                id: 'participant_002',
                 name: 'Maya Patel',
                 grade: '4th Grade',
                 style: 'Kinesthetic Learner',
@@ -456,7 +456,7 @@
                 }
             },
             {
-                id: 'student_003',
+                id: 'participant_003',
                 name: 'Jordan Smith',
                 grade: '5th Grade',
                 style: 'Auditory Learner',
@@ -468,7 +468,7 @@
                 }
             },
             {
-                id: 'student_004',
+                id: 'participant_004',
                 name: 'Emma Rodriguez',
                 grade: '3rd Grade',
                 style: 'Reading Learner',
@@ -482,49 +482,49 @@
         ];
         
         // Global state
-        let selectedStudent = null;
+        let selectedParticipant = null;
         let currentExperience = null;
         let pactTracker = null;
         let adaptationCount = 0;
         
         // Initialize demo
         function initDemo() {
-            renderStudentSelector();
+            renderParticipantSelector();
             updateMetrics();
         }
         
-        function renderStudentSelector() {
-            const selector = document.getElementById('studentSelector');
-            selector.innerHTML = STUDENT_PROFILES.map(student => `
-                <div class="student-card" data-student-id="${student.id}" onclick="selectStudent('${student.id}')">
-                    <div class="student-name">${student.avatar} ${student.name}</div>
-                    <div class="student-details">
-                        ${student.grade} • ${student.style}
+        function renderParticipantSelector() {
+            const selector = document.getElementById('participantSelector');
+            selector.innerHTML = PARTICIPANT_PROFILES.map(participant => `
+                <div class="participant-card" data-participant-id="${participant.id}" onclick="selectParticipant('${participant.id}')">
+                    <div class="participant-name">${participant.avatar} ${participant.name}</div>
+                    <div class="participant-details">
+                        ${participant.grade} • ${participant.style}
                     </div>
                 </div>
             `).join('');
         }
         
-        function selectStudent(studentId) {
+        function selectParticipant(participantId) {
             // Update UI
-            document.querySelectorAll('.student-card').forEach(card => {
+            document.querySelectorAll('.participant-card').forEach(card => {
                 card.classList.remove('selected');
             });
-            document.querySelector(`[data-student-id="${studentId}"]`).classList.add('selected');
+            document.querySelector(`[data-participant-id="${participantId}"]`).classList.add('selected');
             
-            // Set selected student
-            selectedStudent = STUDENT_PROFILES.find(s => s.id === studentId);
+            // Set selected participant
+            selectedParticipant = PARTICIPANT_PROFILES.find(s => s.id === participantId);
             
             // Update lesson title
             document.getElementById('lessonTitle').textContent = 
-                `Welcome ${selectedStudent.name}! Ready to learn about Fractions?`;
+                `Welcome ${selectedParticipant.name}! Ready to learn about Fractions?`;
             
-            showNotification(`Selected ${selectedStudent.name}`, 'success');
+            showNotification(`Selected ${selectedParticipant.name}`, 'success');
         }
         
         async function startLearningExperience() {
-            if (!selectedStudent) {
-                showNotification('Please select a student first!', 'warning');
+            if (!selectedParticipant) {
+                showNotification('Please select a participant first!', 'warning');
                 return;
             }
             
@@ -540,7 +540,7 @@
                 
                 pactTracker = new PACTEngagementTracker({
                     ...DEMO_CONFIG,
-                    studentId: selectedStudent.id,
+                    participantId: selectedParticipant.id,
                     sessionId: 'demo_session_' + Date.now()
                 });
                 
@@ -576,14 +576,14 @@
                 },
                 body: JSON.stringify({
                     context: {
-                        student_id: selectedStudent.id,
+                        participant_id: selectedParticipant.id,
                         session_id: 'demo_session_' + Date.now(),
                         subject: 'Mathematics',
-                        grade_level: selectedStudent.grade,
-                        learning_style: selectedStudent.preferences.learning_style,
-                        difficulty_preference: selectedStudent.preferences.difficulty_preference,
+                        grade_level: selectedParticipant.grade,
+                        learning_style: selectedParticipant.preferences.learning_style,
+                        difficulty_preference: selectedParticipant.preferences.difficulty_preference,
                         interests: ['games', 'puzzles'],
-                        current_knowledge_level: selectedStudent.preferences.knowledge_level,
+                        current_knowledge_level: selectedParticipant.preferences.knowledge_level,
                         engagement_score: 0.5,
                         attention_span: 15
                     },

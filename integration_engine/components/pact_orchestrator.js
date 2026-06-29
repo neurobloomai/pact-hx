@@ -23,33 +23,33 @@ class PACTOrchestrator extends EventEmitter {
     logger.info('🎭 PACT Orchestrator initialized');
   }
 
-  async orchestratePersonalizedLearning(studentId, learningObjective, sessionContext = {}) {
+  async orchestratePersonalizedSession(participantId, learningObjective, sessionContext = {}) {
     const orchestrationId = this.generateOrchestrationId();
     
     logger.info('🎯 Starting personalized learning orchestration', {
       orchestrationId,
-      studentId,
+      participantId,
       learningObjective
     });
 
     try {
-      // 1. Get comprehensive student state from all components
-      const studentProfile = await this.getUnifiedStudentProfile(studentId);
+      // 1. Get comprehensive participant state from all components
+      const participantProfile = await this.getUnifiedParticipantProfile(participantId);
       
       // 2. Generate initial creative experience
       const initialExperience = await this.creativeSynthesisClient.generateExperience({
         learningObjective,
-        studentProfile,
+        participantProfile,
         sessionContext
       });
 
       // 3. Create orchestration tracking
       const orchestration = {
         id: orchestrationId,
-        studentId,
+        participantId,
         learningObjective,
         sessionContext,
-        studentProfile,
+        participantProfile,
         currentExperience: initialExperience,
         adaptationHistory: [],
         startTime: Date.now(),
@@ -72,7 +72,7 @@ class PACTOrchestrator extends EventEmitter {
       return {
         orchestrationId,
         initialExperience,
-        studentProfile,
+        participantProfile,
         estimatedDuration: sessionContext.timeLimit || 30,
         adaptationCapabilities: this.getAdaptationCapabilities()
       };
@@ -80,16 +80,16 @@ class PACTOrchestrator extends EventEmitter {
     } catch (error) {
       logger.error('❌ Failed to orchestrate personalized learning', {
         orchestrationId,
-        studentId,
+        participantId,
         error: error.message
       });
       throw error;
     }
   }
 
-  async getUnifiedStudentProfile(studentId) {
+  async getUnifiedParticipantProfile(participantId) {
     const profile = {
-      studentId,
+      participantId,
       timestamp: Date.now(),
       
       // Default profile structure
@@ -107,8 +107,8 @@ class PACTOrchestrator extends EventEmitter {
       if (engagementComponent) {
         const engagementData = await this.requestFromComponent(
           engagementComponent, 
-          'get_student_profile', 
-          { studentId }
+          'get_participant_profile', 
+          { participantId }
         );
         if (engagementData) {
           profile.engagement = { ...profile.engagement, ...engagementData.engagement };
@@ -122,7 +122,7 @@ class PACTOrchestrator extends EventEmitter {
         const empathyData = await this.requestFromComponent(
           empathyComponent,
           'get_emotional_profile',
-          { studentId }
+          { participantId }
         );
         if (empathyData) {
           profile.emotional = { ...profile.emotional, ...empathyData };
@@ -131,33 +131,33 @@ class PACTOrchestrator extends EventEmitter {
 
       // Get creative profile from creative synthesis
       try {
-        const creativeData = await this.creativeSynthesisClient.getStudentCreativeProfile(studentId);
+        const creativeData = await this.creativeSynthesisClient.getParticipantCreativeProfile(participantId);
         if (creativeData) {
           profile.creative = { ...profile.creative, ...creativeData };
         }
       } catch (error) {
-        logger.warn('Could not fetch creative profile, using defaults', { studentId });
+        logger.warn('Could not fetch creative profile, using defaults', { participantId });
       }
 
       // Get session history
-      const sessionHistory = await this.server.sessionManager.getStudentSessionHistory(studentId);
+      const sessionHistory = await this.server.sessionManager.getParticipantSessionHistory(participantId);
       if (sessionHistory) {
         profile.history = sessionHistory;
       }
 
       // Compute derived insights
-      profile.insights = this.computeStudentInsights(profile);
+      profile.insights = this.computeParticipantInsights(profile);
 
-      logger.debug('📊 Unified student profile assembled', {
-        studentId,
+      logger.debug('📊 Unified participant profile assembled', {
+        participantId,
         profileComponents: Object.keys(profile)
       });
 
       return profile;
 
     } catch (error) {
-      logger.error('Failed to assemble unified student profile', {
-        studentId,
+      logger.error('Failed to assemble unified participant profile', {
+        participantId,
         error: error.message
       });
       
@@ -166,7 +166,7 @@ class PACTOrchestrator extends EventEmitter {
     }
   }
 
-  computeStudentInsights(profile) {
+  computeParticipantInsights(profile) {
     const insights = {
       overallPerformance: 0.5,
       recommendedApproaches: [],
@@ -246,7 +246,7 @@ class PACTOrchestrator extends EventEmitter {
   }
 
   async performOrchestrationCycle(orchestration) {
-    const { id: orchestrationId, studentId } = orchestration;
+    const { id: orchestrationId, participantId } = orchestration;
 
     // 1. Check for adaptation triggers from all components
     const adaptationNeeds = await this.assessAdaptationNeeds(orchestration);
@@ -275,12 +275,12 @@ class PACTOrchestrator extends EventEmitter {
 
   async assessAdaptationNeeds(orchestration) {
     const adaptationNeeds = [];
-    const { studentId } = orchestration;
+    const { participantId } = orchestration;
 
     try {
       // Check engagement-based adaptations
       const engagementAdaptation = await this.server.adaptationEngine.assessEngagementAdaptation(
-        studentId, orchestration
+        participantId, orchestration
       );
       if (engagementAdaptation) {
         adaptationNeeds.push({
@@ -293,7 +293,7 @@ class PACTOrchestrator extends EventEmitter {
 
       // Check trust-based adaptations
       const trustAdaptation = await this.server.adaptationEngine.assessTrustAdaptation(
-        studentId, orchestration
+        participantId, orchestration
       );
       if (trustAdaptation) {
         adaptationNeeds.push({
@@ -315,14 +315,14 @@ class PACTOrchestrator extends EventEmitter {
         });
       }
 
-      // Check teacher-initiated adaptations
-      const teacherAdaptation = await this.checkTeacherAdaptationRequests(orchestration);
-      if (teacherAdaptation) {
+      // Check operator-initiated adaptations
+      const operatorAdaptation = await this.checkOperatorAdaptationRequests(orchestration);
+      if (operatorAdaptation) {
         adaptationNeeds.push({
-          type: 'teacher',
-          trigger: teacherAdaptation.trigger,
-          priority: 'high', // Teacher requests have high priority
-          data: teacherAdaptation
+          type: 'operator',
+          trigger: operatorAdaptation.trigger,
+          priority: 'high', // Operator requests have high priority
+          data: operatorAdaptation
         });
       }
 
@@ -348,7 +348,7 @@ class PACTOrchestrator extends EventEmitter {
   }
 
   async executeAdaptation(orchestration, adaptationNeed) {
-    const { id: orchestrationId, studentId } = orchestration;
+    const { id: orchestrationId, participantId } = orchestration;
     const adaptationId = this.generateAdaptationId();
 
     logger.info('🎨 Executing adaptation', {
@@ -359,13 +359,13 @@ class PACTOrchestrator extends EventEmitter {
     });
 
     try {
-      // 1. Get current student profile
-      const currentProfile = await this.getUnifiedStudentProfile(studentId);
+      // 1. Get current participant profile
+      const currentProfile = await this.getUnifiedParticipantProfile(participantId);
 
       // 2. Request adaptation from Creative Synthesis
       const adaptationRequest = {
         currentExperience: orchestration.currentExperience,
-        studentProfile: currentProfile,
+        participantProfile: currentProfile,
         adaptationReason: adaptationNeed.trigger,
         adaptationType: adaptationNeed.type,
         adaptationData: adaptationNeed.data,
@@ -392,14 +392,14 @@ class PACTOrchestrator extends EventEmitter {
 
       orchestration.adaptationHistory.push(adaptationRecord);
 
-      // 5. Apply adaptation to student interface
-      await this.applyAdaptationToInterface(studentId, adaptation, adaptationRecord);
+      // 5. Apply adaptation to participant interface
+      await this.applyAdaptationToInterface(participantId, adaptation, adaptationRecord);
 
-      // 6. Notify teacher dashboard
-      await this.notifyTeacherOfAdaptation(studentId, adaptationRecord);
+      // 6. Notify operator dashboard
+      await this.notifyOperatorOfAdaptation(participantId, adaptationRecord);
 
       // 7. Update component states
-      await this.updateComponentStates(studentId, adaptation);
+      await this.updateComponentStates(participantId, adaptation);
 
       logger.info('✅ Adaptation executed successfully', {
         orchestrationId,
@@ -419,21 +419,21 @@ class PACTOrchestrator extends EventEmitter {
     }
   }
 
-  async applyAdaptationToInterface(studentId, adaptation, adaptationRecord) {
-    const studentInterface = this.server.componentRegistry.findComponentByType('student_interface');
+  async applyAdaptationToInterface(participantId, adaptation, adaptationRecord) {
+    const participantInterface = this.server.componentRegistry.findComponentByType('participant_interface');
     
-    if (studentInterface) {
+    if (participantInterface) {
       try {
-        await this.requestFromComponent(studentInterface, 'apply_adaptation', {
-          studentId,
+        await this.requestFromComponent(participantInterface, 'apply_adaptation', {
+          participantId,
           adaptation: adaptation.newExperience,
           adaptationId: adaptationRecord.id,
           strategy: adaptation.strategy,
           transition: adaptation.transition || 'smooth'
         });
       } catch (error) {
-        logger.warn('Failed to apply adaptation to student interface', {
-          studentId,
+        logger.warn('Failed to apply adaptation to participant interface', {
+          participantId,
           adaptationId: adaptationRecord.id,
           error: error.message
         });
@@ -441,13 +441,13 @@ class PACTOrchestrator extends EventEmitter {
     }
   }
 
-  async notifyTeacherOfAdaptation(studentId, adaptationRecord) {
-    const teacherDashboard = this.server.componentRegistry.findComponentByType('teacher_dashboard');
+  async notifyOperatorOfAdaptation(participantId, adaptationRecord) {
+    const operatorDashboard = this.server.componentRegistry.findComponentByType('operator_dashboard');
     
-    if (teacherDashboard) {
+    if (operatorDashboard) {
       try {
-        await this.requestFromComponent(teacherDashboard, 'adaptation_notification', {
-          studentId,
+        await this.requestFromComponent(operatorDashboard, 'adaptation_notification', {
+          participantId,
           adaptationId: adaptationRecord.id,
           type: adaptationRecord.type,
           trigger: adaptationRecord.trigger,
@@ -455,8 +455,8 @@ class PACTOrchestrator extends EventEmitter {
           timestamp: adaptationRecord.timestamp
         });
       } catch (error) {
-        logger.warn('Failed to notify teacher dashboard', {
-          studentId,
+        logger.warn('Failed to notify operator dashboard', {
+          participantId,
           adaptationId: adaptationRecord.id,
           error: error.message
         });
@@ -464,18 +464,18 @@ class PACTOrchestrator extends EventEmitter {
     }
   }
 
-  async updateComponentStates(studentId, adaptation) {
+  async updateComponentStates(participantId, adaptation) {
     // Update engagement tracker with adaptation info
     const engagementTracker = this.server.componentRegistry.findComponentByType('engagement_tracker');
     if (engagementTracker) {
       try {
         await this.requestFromComponent(engagementTracker, 'adaptation_applied', {
-          studentId,
+          participantId,
           adaptationStrategy: adaptation.strategy,
           expectedImpact: adaptation.expectedImpact
         });
       } catch (error) {
-        logger.warn('Failed to update engagement tracker', { studentId, error: error.message });
+        logger.warn('Failed to update engagement tracker', { participantId, error: error.message });
       }
     }
 
@@ -484,19 +484,19 @@ class PACTOrchestrator extends EventEmitter {
     if (empathyComponent) {
       try {
         await this.requestFromComponent(empathyComponent, 'update_interaction_style', {
-          studentId,
+          participantId,
           newApproach: adaptation.empathyAdjustments || {}
         });
       } catch (error) {
-        logger.warn('Failed to update empathetic interaction', { studentId, error: error.message });
+        logger.warn('Failed to update empathetic interaction', { participantId, error: error.message });
       }
     }
   }
 
   async assessLearningProgressAdaptation(orchestration) {
-    const { studentId, currentExperience, adaptationHistory } = orchestration;
+    const { participantId, currentExperience, adaptationHistory } = orchestration;
     
-    // Check if student has been stuck on same concept for too long
+    // Check if participant has been stuck on same concept for too long
     const recentAdaptations = adaptationHistory.slice(-3);
     const stuckOnSameConcept = recentAdaptations.length >= 2 && 
       recentAdaptations.every(a => a.trigger.includes('low_engagement'));
@@ -504,21 +504,21 @@ class PACTOrchestrator extends EventEmitter {
     if (stuckOnSameConcept) {
       return {
         trigger: 'stuck_on_concept',
-        reason: 'Student showing repeated low engagement on same concept',
+        reason: 'Participant showing repeated low engagement on same concept',
         recommendation: 'switch_concept_approach',
         priority: 'medium'
       };
     }
 
-    // Check if student is ready for advancement
+    // Check if participant is ready for advancement
     const sessionDuration = Date.now() - orchestration.startTime;
     const minSessionTime = 10 * 60000; // 10 minutes
     
     if (sessionDuration > minSessionTime && adaptationHistory.length === 0) {
-      // No adaptations needed - student doing well, might be ready for advancement
+      // No adaptations needed - participant doing well, might be ready for advancement
       return {
         trigger: 'advancement_opportunity',
-        reason: 'Student performing well without adaptations needed',
+        reason: 'Participant performing well without adaptations needed',
         recommendation: 'increase_challenge',
         priority: 'low'
       };
@@ -527,18 +527,18 @@ class PACTOrchestrator extends EventEmitter {
     return null;
   }
 
-  async checkTeacherAdaptationRequests(orchestration) {
-    // Check for manual teacher interventions
-    const teacherRequests = await this.server.sessionManager.getTeacherRequests(orchestration.id);
+  async checkOperatorAdaptationRequests(orchestration) {
+    // Check for manual operator interventions
+    const operatorRequests = await this.server.sessionManager.getOperatorRequests(orchestration.id);
     
-    if (teacherRequests && teacherRequests.length > 0) {
-      const latestRequest = teacherRequests[teacherRequests.length - 1];
+    if (operatorRequests && operatorRequests.length > 0) {
+      const latestRequest = operatorRequests[operatorRequests.length - 1];
       
       return {
-        trigger: 'teacher_request',
-        reason: latestRequest.reason || 'Manual teacher intervention',
+        trigger: 'operator_request',
+        reason: latestRequest.reason || 'Manual operator intervention',
         requestedAction: latestRequest.action,
-        teacherId: latestRequest.teacherId,
+        operatorId: latestRequest.operatorId,
         priority: 'high'
       };
     }
@@ -547,12 +547,12 @@ class PACTOrchestrator extends EventEmitter {
   }
 
   async updateOrchestrationMetrics(orchestration) {
-    const { id: orchestrationId, studentId } = orchestration;
+    const { id: orchestrationId, participantId } = orchestration;
     
     try {
       // Get current engagement metrics
-      const currentEngagement = await this.getCurrentEngagement(studentId);
-      const currentTrust = await this.getCurrentTrust(studentId);
+      const currentEngagement = await this.getCurrentEngagement(participantId);
+      const currentTrust = await this.getCurrentTrust(participantId);
 
       // Update orchestration metrics
       orchestration.currentMetrics = {
@@ -612,8 +612,8 @@ class PACTOrchestrator extends EventEmitter {
       };
     }
 
-    // Check for student disengagement
-    const currentEngagement = await this.getCurrentEngagement(orchestration.studentId);
+    // Check for participant disengagement
+    const currentEngagement = await this.getCurrentEngagement(orchestration.participantId);
     if (currentEngagement && currentEngagement.score < 0.2 && sessionDuration > 600000) { // 10 minutes
       return {
         complete: true,
@@ -628,9 +628,9 @@ class PACTOrchestrator extends EventEmitter {
     // This would integrate with assessment systems to determine if learning objective is met
     // For now, use simple heuristics
     
-    const { studentId, adaptationHistory, currentMetrics } = orchestration;
+    const { participantId, adaptationHistory, currentMetrics } = orchestration;
     
-    // If student has high engagement and trust, and minimal adaptations needed
+    // If participant has high engagement and trust, and minimal adaptations needed
     if (currentMetrics && 
         currentMetrics.engagement?.score > 0.8 && 
         currentMetrics.trust?.level > 0.7 && 
@@ -650,7 +650,7 @@ class PACTOrchestrator extends EventEmitter {
 
     logger.info('🏁 Ending orchestration', {
       orchestrationId,
-      studentId: orchestration.studentId,
+      participantId: orchestration.participantId,
       reason,
       duration: Date.now() - orchestration.startTime,
       adaptations: orchestration.adaptationHistory.length
@@ -701,12 +701,12 @@ class PACTOrchestrator extends EventEmitter {
   }
 
   async generateOrchestrationSummary(orchestration, endReason) {
-    const { id, studentId, learningObjective, startTime, adaptationHistory, currentMetrics } = orchestration;
+    const { id, participantId, learningObjective, startTime, adaptationHistory, currentMetrics } = orchestration;
     const duration = Date.now() - startTime;
 
     const summary = {
       orchestrationId: id,
-      studentId,
+      participantId,
       learningObjective,
       duration,
       endReason,
@@ -743,7 +743,7 @@ class PACTOrchestrator extends EventEmitter {
 
     // Analyze adaptation patterns
     if (adaptationHistory.length === 0) {
-      insights.push('Student required no adaptations - excellent self-directed learning');
+      insights.push('Participant required no adaptations - excellent self-directed learning');
     } else if (adaptationHistory.length > 5) {
       insights.push('Multiple adaptations needed - consider different approach or support');
     }
@@ -830,7 +830,7 @@ class PACTOrchestrator extends EventEmitter {
     const notification = {
       type: 'orchestration_started',
       orchestrationId: orchestration.id,
-      studentId: orchestration.studentId,
+      participantId: orchestration.participantId,
       learningObjective: orchestration.learningObjective,
       initialExperience: orchestration.currentExperience
     };
@@ -842,24 +842,24 @@ class PACTOrchestrator extends EventEmitter {
     const notification = {
       type: 'orchestration_ended',
       orchestrationId: orchestration.id,
-      studentId: orchestration.studentId,
+      participantId: orchestration.participantId,
       summary: summary
     };
 
     this.server.io.emit('system_notification', notification);
   }
 
-  async handleTeacherRequest(requestData) {
+  async handleOperatorRequest(requestData) {
     const { requestType, data } = requestData;
     
-    logger.info('👩‍🏫 Handling teacher request', { requestType });
+    logger.info('👩‍🏫 Handling operator request', { requestType });
 
     switch (requestType) {
       case 'classroom_overview':
         return await this.getClassroomOverview(data.classId);
       
-      case 'student_detail':
-        return await this.getStudentDetail(data.studentId);
+      case 'participant_detail':
+        return await this.getParticipantDetail(data.participantId);
       
       case 'trigger_adaptation':
         return await this.triggerManualAdaptation(data);
@@ -871,7 +871,7 @@ class PACTOrchestrator extends EventEmitter {
         return await this.getClassAnalytics(data.classId, data.timeRange);
       
       default:
-        throw new Error(`Unknown teacher request type: ${requestType}`);
+        throw new Error(`Unknown operator request type: ${requestType}`);
     }
   }
 
@@ -882,13 +882,13 @@ class PACTOrchestrator extends EventEmitter {
     const overview = {
       classId,
       timestamp: Date.now(),
-      totalStudents: activeOrchestrations.length,
+      totalParticipants: activeOrchestrations.length,
       orchestrations: await Promise.all(
         activeOrchestrations.map(async (o) => ({
-          studentId: o.studentId,
+          participantId: o.participantId,
           orchestrationId: o.id,
-          currentEngagement: await this.getCurrentEngagement(o.studentId),
-          currentTrust: await this.getCurrentTrust(o.studentId),
+          currentEngagement: await this.getCurrentEngagement(o.participantId),
+          currentTrust: await this.getCurrentTrust(o.participantId),
           adaptationCount: o.adaptationHistory.length,
           sessionDuration: Date.now() - o.startTime,
           status: o.status
@@ -918,7 +918,7 @@ class PACTOrchestrator extends EventEmitter {
       averageEngagement: totalEngagement / orchestrations.length,
       averageTrust: totalTrust / orchestrations.length,
       totalAdaptations,
-      studentsNeedingSupport: orchestrations.filter(o => 
+      participantsNeedingSupport: orchestrations.filter(o => 
         (o.currentEngagement?.score || 0) < 0.4).length,
       highPerformers: orchestrations.filter(o => 
         (o.currentEngagement?.score || 0) > 0.8 && 
@@ -926,26 +926,26 @@ class PACTOrchestrator extends EventEmitter {
     };
   }
 
-  async getCurrentEngagement(studentId) {
+  async getCurrentEngagement(participantId) {
     try {
       const engagementComponent = this.server.componentRegistry.findComponentByType('engagement_tracker');
       if (engagementComponent) {
-        return await this.requestFromComponent(engagementComponent, 'get_current_engagement', { studentId });
+        return await this.requestFromComponent(engagementComponent, 'get_current_engagement', { participantId });
       }
     } catch (error) {
-      logger.warn('Could not get current engagement', { studentId, error: error.message });
+      logger.warn('Could not get current engagement', { participantId, error: error.message });
     }
     return { score: 0.5, level: 'medium', trend: 'stable' };
   }
 
-  async getCurrentTrust(studentId) {
+  async getCurrentTrust(participantId) {
     try {
       const engagementComponent = this.server.componentRegistry.findComponentByType('engagement_tracker');
       if (engagementComponent) {
-        return await this.requestFromComponent(engagementComponent, 'get_current_trust', { studentId });
+        return await this.requestFromComponent(engagementComponent, 'get_current_trust', { participantId });
       }
     } catch (error) {
-      logger.warn('Could not get current trust', { studentId, error: error.message });
+      logger.warn('Could not get current trust', { participantId, error: error.message });
     }
     return { level: 0.5, stage: 'basic_comfort' };
   }
@@ -989,7 +989,7 @@ class PACTOrchestrator extends EventEmitter {
       realTimeAdaptation: true,
       multiModalApproach: true,
       trustBasedAdjustment: true,
-      teacherOverride: true,
+      operatorOverride: true,
       progressiveChallenge: true,
       emotionalResponse: true
     };

@@ -111,30 +111,30 @@ logger.pactEvent = (eventType, data = {}) => {
   });
 };
 
-logger.adaptation = (studentId, adaptationType, details = {}) => {
+logger.adaptation = (participantId, adaptationType, details = {}) => {
   logger.info('Adaptation Triggered', {
     type: 'adaptation',
-    studentId,
+    participantId,
     adaptationType,
     timestamp: Date.now(),
     ...details
   });
 };
 
-logger.engagement = (studentId, score, metadata = {}) => {
+logger.engagement = (participantId, score, metadata = {}) => {
   logger.debug('Engagement Update', {
     type: 'engagement',
-    studentId,
+    participantId,
     score,
     timestamp: Date.now(),
     ...metadata
   });
 };
 
-logger.trust = (studentId, level, event = {}) => {
+logger.trust = (participantId, level, event = {}) => {
   logger.debug('Trust Event', {
     type: 'trust',
-    studentId,
+    participantId,
     level,
     timestamp: Date.now(),
     ...event

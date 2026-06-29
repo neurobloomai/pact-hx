@@ -22,6 +22,7 @@ from typing import Dict, List, Optional, Any, Tuple, Set, Union
 from collections import defaultdict, Counter
 import logging
 
+from .conflict import ConflictDetector
 from .schemas import (
     ValueDomain, ValuePriority, ConflictSeverity, ConflictResolution,
     ValueConstraint, ValueConflict, ValueAlignment, ValueDetectionRule,
@@ -65,6 +66,9 @@ class ValueAlignmentManager:
             collaboration_enabled=enable_collaboration
         )
         
+        # Conflict detection / resolution (delegates to shared state)
+        self._conflict_detector = ConflictDetector(self.state)
+
         # Collaboration interfaces
         self.collaboration_interfaces = {}
         
@@ -733,21 +737,7 @@ class ValueAlignmentManager:
         context: str,
         domain_assessments: Dict[ValueDomain, float]
     ) -> List[Tuple[str, ConflictSeverity]]:
-        """Detect value conflicts based on domain assessments"""
-        
-        conflicts = []
-        
-        # Check for low-scoring domains (potential conflicts)
-        for domain, score in domain_assessments.items():
-            if score < self.state.config.conflict_threshold:
-                conflict = self._create_value_conflict(
-                    domain, score, proposed_action, context
-                )
-                
-                if conflict:
-                    conflicts.append((conflict.conflict_id, conflict.severity))
-        
-        return conflicts
+        return self._conflict_detector.detect(proposed_action, context, domain_assessments)
     
     def _create_value_conflict(
         self,
@@ -756,46 +746,7 @@ class ValueAlignmentManager:
         proposed_action: str,
         context: str
     ) -> Optional[ValueConflict]:
-        """Create a value conflict for a low-scoring domain"""
-        
-        # Determine severity based on score and domain importance
-        user_importance = self.state.get_domain_importance(domain)
-        adjusted_score = score * user_importance
-        
-        if adjusted_score < 0.2:
-            severity = ConflictSeverity.SEVERE
-        elif adjusted_score < 0.4:
-            severity = ConflictSeverity.MODERATE
-        elif adjusted_score < 0.6:
-            severity = ConflictSeverity.MILD
-        else:
-            return None  # Not significant enough to be a conflict
-        
-        # Find relevant constraints for this domain
-        domain_constraints = [
-            c for c in self.state.active_constraints.values()
-            if c.domain == domain
-        ]
-        
-        primary_constraint = domain_constraints[0] if domain_constraints else None
-        
-        # Create conflict
-        conflict = ValueConflict(
-            severity=severity,
-            conflict_type=f"{domain.value}_alignment_low",
-            primary_constraint=primary_constraint.constraint_id if primary_constraint else "",
-            proposed_action=proposed_action,
-            context_description=context[:200],
-            conflict_details=f"Action may not align well with {domain.value} values (score: {score:.2f})",
-            suggested_resolution=self._suggest_conflict_resolution(domain, severity, score),
-            resolution_confidence=0.7
-        )
-        
-        # Store conflict
-        self.state.active_conflicts[conflict.conflict_id] = conflict
-        self.state.total_conflicts_detected += 1
-        
-        return conflict
+        return self._conflict_detector.create_conflict(domain, score, proposed_action, context)
     
     def _suggest_conflict_resolution(
         self,
@@ -803,26 +754,7 @@ class ValueAlignmentManager:
         severity: ConflictSeverity,
         score: float
     ) -> ConflictResolution:
-        """Suggest appropriate resolution strategy for a conflict"""
-        
-        # Safety and privacy conflicts require careful handling
-        if domain in [ValueDomain.SAFETY, ValueDomain.PRIVACY]:
-            if severity == ConflictSeverity.SEVERE:
-                return ConflictResolution.GRACEFUL_DECLINE
-            else:
-                return ConflictResolution.SEEK_CLARIFICATION
-        
-        # Autonomy conflicts should give user choice
-        if domain == ValueDomain.AUTONOMY:
-            return ConflictResolution.USER_CHOICE
-        
-        # For other domains, base on severity
-        if severity == ConflictSeverity.SEVERE:
-            return ConflictResolution.ESCALATE_HUMAN
-        elif severity == ConflictSeverity.MODERATE:
-            return ConflictResolution.SEEK_CLARIFICATION
-        else:
-            return ConflictResolution.USER_CHOICE
+        return self._conflict_detector.suggest_resolution(domain, severity, score)
     
     def _generate_alignment_recommendations(
         self,
@@ -886,220 +818,26 @@ class ValueAlignmentManager:
         
         return negatives
     
-    # ========== CONFLICT RESOLUTION ==========
-    
+    # ========== CONFLICT RESOLUTION (delegated to ConflictDetector) ==========
+
     def _execute_resolution_strategy(
         self,
         conflict: ValueConflict,
         resolution_choice: str,
         user_input: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        """Execute a specific conflict resolution strategy"""
-        
-        try:
-            resolution_enum = ConflictResolution(resolution_choice)
-        except ValueError:
-            resolution_enum = ConflictResolution.SEEK_CLARIFICATION
-        
-        if resolution_enum == ConflictResolution.USER_CHOICE:
-            return self._execute_user_choice_resolution(conflict, user_input)
-        
-        elif resolution_enum == ConflictResolution.PRIORITIZE_SAFETY:
-            return self._execute_safety_priority_resolution(conflict)
-        
-        elif resolution_enum == ConflictResolution.SEEK_CLARIFICATION:
-            return self._execute_clarification_resolution(conflict, user_input)
-        
-        elif resolution_enum == ConflictResolution.GRACEFUL_DECLINE:
-            return self._execute_graceful_decline_resolution(conflict)
-        
-        elif resolution_enum == ConflictResolution.ESCALATE_HUMAN:
-            return self._execute_human_escalation_resolution(conflict)
-        
-        else:  # CONTEXT_DEPENDENT
-            return self._execute_context_dependent_resolution(conflict, user_input)
-    
-    def _execute_user_choice_resolution(
-        self,
-        conflict: ValueConflict,
-        user_input: Optional[Dict[str, Any]]
-    ) -> Dict[str, Any]:
-        """Let user decide how to resolve the conflict"""
-        
-        if not user_input or "user_decision" not in user_input:
-            return {
-                "success": False,
-                "outcome": "awaiting_user_decision",
-                "requires_input": True,
-                "message": "User decision required to resolve conflict"
-            }
-        
-        user_decision = user_input["user_decision"]
-        
-        # Update user value profile based on their decision
-        if "value_preference" in user_input:
-            self._learn_from_user_decision(conflict, user_input["value_preference"])
-        
-        return {
-            "success": True,
-            "outcome": f"resolved_by_user_choice_{user_decision}",
-            "user_decision": user_decision,
-            "lessons": [f"User prefers {user_decision} approach for {conflict.conflict_type} conflicts"]
-        }
-    
-    def _execute_safety_priority_resolution(self, conflict: ValueConflict) -> Dict[str, Any]:
-        """Prioritize safety in conflict resolution"""
-        
-        return {
-            "success": True,
-            "outcome": "resolved_prioritizing_safety",
-            "action_taken": "chose_safer_alternative",
-            "lessons": ["Safety prioritized over other values in conflict resolution"]
-        }
-    
-    def _execute_clarification_resolution(
-        self,
-        conflict: ValueConflict,
-        user_input: Optional[Dict[str, Any]]
-    ) -> Dict[str, Any]:
-        """Seek clarification to resolve conflict"""
-        
-        if not user_input or "clarification" not in user_input:
-            return {
-                "success": False,
-                "outcome": "awaiting_clarification",
-                "requires_input": True,
-                "message": f"Need clarification about {conflict.conflict_type}"
-            }
-        
-        clarification = user_input["clarification"]
-        
-        # Use clarification to update understanding
-        self._process_user_clarification(conflict, clarification)
-        
-        return {
-            "success": True,
-            "outcome": "resolved_with_clarification",
-            "clarification_received": clarification,
-            "lessons": ["User clarification helped resolve value conflict"]
-        }
-    
-    def _execute_graceful_decline_resolution(self, conflict: ValueConflict) -> Dict[str, Any]:
-        """Politely decline to take the action that caused conflict"""
-        
-        return {
-            "success": True,
-            "outcome": "gracefully_declined",
-            "action_taken": "declined_action",
-            "lessons": [f"Declined action due to {conflict.conflict_type} conflict"]
-        }
-    
-    def _execute_human_escalation_resolution(self, conflict: ValueConflict) -> Dict[str, Any]:
-        """Escalate conflict to human oversight"""
-        
-        return {
-            "success": True,
-            "outcome": "escalated_to_human",
-            "action_taken": "escalated",
-            "lessons": [f"Escalated {conflict.severity.value} {conflict.conflict_type} conflict"]
-        }
-    
-    def _execute_context_dependent_resolution(
-        self,
-        conflict: ValueConflict,
-        user_input: Optional[Dict[str, Any]]
-    ) -> Dict[str, Any]:
-        """Resolve based on specific context"""
-        
-        # Analyze context to determine best resolution
-        if "urgent" in conflict.context_description.lower():
-            return self._execute_safety_priority_resolution(conflict)
-        elif "personal" in conflict.context_description.lower():
-            return self._execute_user_choice_resolution(conflict, user_input)
-        else:
-            return self._execute_clarification_resolution(conflict, user_input)
-    
+        return self._conflict_detector.execute_resolution(conflict, resolution_choice, user_input)
+
     # ========== LEARNING AND ADAPTATION ==========
-    
+
     def _learn_from_resolution(self, conflict: ValueConflict, resolution_outcome: Dict[str, Any]):
-        """Learn from conflict resolution outcomes"""
-        
-        # Update conflict resolution success rate
-        success = resolution_outcome.get("success", False)
-        
-        # Learn about user preferences
-        if "user_decision" in resolution_outcome:
-            self._update_user_preference_from_resolution(conflict, resolution_outcome)
-        
-        # Add lessons learned
-        lessons = resolution_outcome.get("lessons", [])
-        conflict.lessons_learned.extend(lessons)
-    
+        self._conflict_detector.learn_from_resolution(conflict, resolution_outcome)
+
     def _learn_from_user_decision(self, conflict: ValueConflict, value_preference: Dict[str, float]):
-        """Learn from user's value preferences in conflict resolution"""
-        
-        # Update user value profile
-        updates = {}
-        for domain_str, preference in value_preference.items():
-            try:
-                domain = ValueDomain(domain_str)
-                updates[domain] = preference
-            except ValueError:
-                continue
-        
-        if updates:
-            self.update_user_values(updates, source="learned_from_conflict")
-    
+        self._conflict_detector.absorb_preference_update(conflict, value_preference)
+
     def _process_user_clarification(self, conflict: ValueConflict, clarification: str):
-        """Process user clarification to improve future conflict detection"""
-        
-        # Extract insights from clarification
-        clarification_lower = clarification.lower()
-        
-        # Look for value-related keywords
-        value_keywords = {
-            "safety": ValueDomain.SAFETY,
-            "privacy": ValueDomain.PRIVACY,
-            "choice": ValueDomain.AUTONOMY,
-            "fair": ValueDomain.FAIRNESS,
-            "honest": ValueDomain.TRANSPARENCY
-        }
-        
-        value_updates = {}
-        for keyword, domain in value_keywords.items():
-            if keyword in clarification_lower:
-                # User mentioned this value - increase importance
-                current_importance = self.state.get_domain_importance(domain)
-                value_updates[domain] = min(current_importance + 0.1, 1.0)
-        
-        if value_updates:
-            self.update_user_values(value_updates, context=clarification, source="clarification")
-    
-    def _update_user_preference_from_resolution(self, conflict: ValueConflict, outcome: Dict[str, Any]):
-        """Update user preferences based on resolution choices"""
-        
-        user_decision = outcome.get("user_decision", "")
-        
-        # Infer value preferences from decision
-        preference_updates = {}
-        
-        if "safety" in user_decision.lower():
-            preference_updates[ValueDomain.SAFETY] = min(
-                self.state.get_domain_importance(ValueDomain.SAFETY) + 0.1, 1.0
-            )
-        
-        if "privacy" in user_decision.lower():
-            preference_updates[ValueDomain.PRIVACY] = min(
-                self.state.get_domain_importance(ValueDomain.PRIVACY) + 0.1, 1.0
-            )
-        
-        if "choice" in user_decision.lower() or "decide" in user_decision.lower():
-            preference_updates[ValueDomain.AUTONOMY] = min(
-                self.state.get_domain_importance(ValueDomain.AUTONOMY) + 0.1, 1.0
-            )
-        
-        if preference_updates:
-            self.update_user_values(preference_updates, source="resolution_preference")
+        self._conflict_detector.absorb_clarification(conflict, clarification)
     
     # ========== COLLABORATION ENHANCEMENT ==========
     

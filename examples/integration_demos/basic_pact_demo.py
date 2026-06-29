@@ -7,7 +7,7 @@ Interactive demo server that integrates all PACT components:
 - Serves demo.html interface
 - Provides WebSocket real-time updates  
 - Connects to Creative Synthesis API
-- Manages student sessions and adaptations
+- Manages participant sessions and adaptations
 
 This creates a complete interactive demo experience.
 """
@@ -55,45 +55,45 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 def demo_home():
     return "<h1>🎓 PACT Demo Server is Running!</h1><p>Server is working. Open the frontend files directly in your browser.</p>"
 
-@app.route('/student')
-def student_interface():
-    """Serve the actual student interface"""
+@app.route('/participant')
+def participant_interface():
+    """Serve the actual participant interface"""
     try:
-        # Path to the student interface file
-        file_path = os.path.join(os.path.dirname(__file__), '../..', 'frontend', 'student_interface', 'demo.html')
+        # Path to the participant interface file
+        file_path = os.path.join(os.path.dirname(__file__), '../..', 'frontend', 'participant_interface', 'demo.html')
         
         if os.path.exists(file_path):
             with open(file_path, 'r', encoding='utf-8') as f:
                 return f.read()
         else:
             return f'''
-            <h1>❌ Student Interface Not Found</h1>
+            <h1>❌ Participant Interface Not Found</h1>
             <p>Looking for file at: <code>{file_path}</code></p>
             <p>Please ensure the file exists and try again.</p>
             <p><a href="/">← Back</a></p>
             '''
     except Exception as e:
-        return f"<h1>Error loading student interface:</h1><p>{str(e)}</p>"
+        return f"<h1>Error loading participant interface:</h1><p>{str(e)}</p>"
 
-@app.route('/teacher')
-def teacher_interface():
-    """Serve the actual teacher dashboard"""
+@app.route('/operator')
+def operator_interface():
+    """Serve the actual operator dashboard"""
     try:
-        # Path to the teacher dashboard file
-        file_path = os.path.join(os.path.dirname(__file__), '../..', 'frontend', 'teacher_dashboard.html')
+        # Path to the operator dashboard file
+        file_path = os.path.join(os.path.dirname(__file__), '../..', 'frontend', 'operator_dashboard.html')
         
         if os.path.exists(file_path):
             with open(file_path, 'r', encoding='utf-8') as f:
                 return f.read()
         else:
             return f'''
-            <h1>❌ Teacher Dashboard Not Found</h1>
+            <h1>❌ Operator Dashboard Not Found</h1>
             <p>Looking for file at: <code>{file_path}</code></p>
             <p>Please ensure the file exists and try again.</p>
             <p><a href="/">← Back</a></p>
             '''
     except Exception as e:
-        return f"<h1>Error loading teacher dashboard:</h1><p>{str(e)}</p>"
+        return f"<h1>Error loading operator dashboard:</h1><p>{str(e)}</p>"
 
 # Add support for static assets (CSS, JS, images)
 @app.route('/frontend/<path:filename>')
@@ -103,28 +103,28 @@ def serve_frontend_assets(filename):
     return send_from_directory(frontend_dir, filename)
 
 # Global state
-active_sessions = {}  # session_id -> student data
+active_sessions = {}  # session_id -> participant data
 api_client = None
 
 # ============================================================================
-# Student Session Management
+# Participant Session Management
 # ============================================================================
 
-class StudentSession:
-    """Manages individual student session state"""
+class ParticipantSession:
+    """Manages individual participant session state"""
     
-    def __init__(self, student_id: str, student_data: Dict):
-        self.student_id = student_id
+    def __init__(self, participant_id: str, participant_data: Dict):
+        self.participant_id = participant_id
         self.session_id = f"session_{uuid.uuid4().hex[:8]}"
-        self.name = student_data.get('name', 'Student')
-        self.learning_style = student_data.get('learning_style', 'visual')
-        self.grade_level = student_data.get('grade', '5th Grade')
-        self.difficulty = student_data.get('difficulty_preference', 'medium')
+        self.name = participant_data.get('name', 'Participant')
+        self.learning_style = participant_data.get('learning_style', 'visual')
+        self.grade_level = participant_data.get('grade', '5th Grade')
+        self.difficulty = participant_data.get('difficulty_preference', 'medium')
         
         # Session state
         self.current_experience_id = None
         self.engagement_level = 0.5
-        self.knowledge_level = student_data.get('knowledge_level', 0.5)
+        self.knowledge_level = participant_data.get('knowledge_level', 0.5)
         self.adaptation_count = 0
         self.start_time = datetime.now()
         self.last_activity = datetime.now()
@@ -138,7 +138,7 @@ class StudentSession:
             'interactions': 0
         }
         
-        logger.info(f"👨‍🎓 Student session created: {self.name} ({self.student_id})")
+        logger.info(f"👨‍🎓 Participant session created: {self.name} ({self.participant_id})")
     
     def update_engagement(self, engagement_data: Dict):
         """Update engagement based on frontend tracking"""
@@ -149,7 +149,7 @@ class StudentSession:
     def to_dict(self):
         """Convert session to dictionary for JSON serialization"""
         return {
-            'student_id': self.student_id,
+            'participant_id': self.participant_id,
             'session_id': self.session_id,
             'name': self.name,
             'learning_style': self.learning_style,
@@ -190,22 +190,22 @@ class AsyncAPIClient:
             logger.error(f"❌ Failed to connect to API: {e}")
             return False
     
-    async def generate_experience(self, student_session: StudentSession, subject: str, topic: str):
+    async def generate_experience(self, participant_session: ParticipantSession, subject: str, topic: str):
         """Generate educational experience"""
         if not self.session:
             await self.initialize()
         
         request_data = {
             "context": {
-                "student_id": student_session.student_id,
-                "session_id": student_session.session_id,
+                "participant_id": participant_session.participant_id,
+                "session_id": participant_session.session_id,
                 "subject": subject,
-                "grade_level": student_session.grade_level,
-                "learning_style": student_session.learning_style,
-                "difficulty_preference": student_session.difficulty,
+                "grade_level": participant_session.grade_level,
+                "learning_style": participant_session.learning_style,
+                "difficulty_preference": participant_session.difficulty,
                 "interests": [],
-                "current_knowledge_level": student_session.knowledge_level,
-                "engagement_score": student_session.engagement_level,
+                "current_knowledge_level": participant_session.knowledge_level,
+                "engagement_score": participant_session.engagement_level,
                 "attention_span": 15
             },
             "content_type": "lesson",
@@ -219,7 +219,7 @@ class AsyncAPIClient:
             async with self.session.post(f"{self.base_url}/generate", json=request_data) as response:
                 if response.status == 200:
                     experience = await response.json()
-                    student_session.current_experience_id = experience["experience_id"]
+                    participant_session.current_experience_id = experience["experience_id"]
                     return experience
                 else:
                     logger.error(f"❌ Experience generation failed: {response.status}")
@@ -228,29 +228,29 @@ class AsyncAPIClient:
             logger.error(f"❌ API error: {e}")
             return None
     
-    async def trigger_adaptation(self, student_session: StudentSession, trigger_type: str, confidence: float = 0.8):
-        """Trigger adaptation for student experience"""
-        if not student_session.current_experience_id:
+    async def trigger_adaptation(self, participant_session: ParticipantSession, trigger_type: str, confidence: float = 0.8):
+        """Trigger adaptation for participant experience"""
+        if not participant_session.current_experience_id:
             return None
         
         trigger_data = {
             "trigger_type": trigger_type,
             "confidence": confidence,
             "context": {
-                "current_engagement": student_session.engagement_level,
-                "learning_style": student_session.learning_style
+                "current_engagement": participant_session.engagement_level,
+                "learning_style": participant_session.learning_style
             },
             "timestamp": datetime.now().isoformat()
         }
         
         try:
             async with self.session.post(
-                f"{self.base_url}/adapt/{student_session.current_experience_id}", 
+                f"{self.base_url}/adapt/{participant_session.current_experience_id}", 
                 json=trigger_data
             ) as response:
                 if response.status == 200:
                     adaptation = await response.json()
-                    student_session.adaptation_count += 1
+                    participant_session.adaptation_count += 1
                     return adaptation
                 else:
                     logger.error(f"❌ Adaptation failed: {response.status}")
@@ -288,15 +288,15 @@ def health():
         'api_connected': api_client is not None
     })
 
-@app.route('/api/students', methods=['POST'])
-def create_student_session():
-    """Create new student session"""
+@app.route('/api/participants', methods=['POST'])
+def create_participant_session():
+    """Create new participant session"""
     try:
-        student_data = request.json
-        student_id = student_data.get('student_id') or f"student_{uuid.uuid4().hex[:6]}"
+        participant_data = request.json
+        participant_id = participant_data.get('participant_id') or f"participant_{uuid.uuid4().hex[:6]}"
         
         # Create session
-        session = StudentSession(student_id, student_data)
+        session = ParticipantSession(participant_id, participant_data)
         active_sessions[session.session_id] = session
         
         logger.info(f"📝 Created session for {session.name}")
@@ -311,7 +311,7 @@ def create_student_session():
 
 @app.route('/api/experiences', methods=['POST'])
 def generate_experience():
-    """Generate educational experience for student"""
+    """Generate educational experience for participant"""
     try:
         data = request.json
         session_id = data.get('session_id')
@@ -321,21 +321,21 @@ def generate_experience():
         if session_id not in active_sessions:
             return jsonify({'success': False, 'error': 'Session not found'}), 404
         
-        student_session = active_sessions[session_id]
+        participant_session = active_sessions[session_id]
         
         # Generate experience asynchronously
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         
         experience = loop.run_until_complete(
-            api_client.generate_experience(student_session, subject, topic)
+            api_client.generate_experience(participant_session, subject, topic)
         )
         loop.close()
         
         if experience:
             # Emit to connected clients
             socketio.emit('experience_generated', {
-                'student_id': student_session.student_id,
+                'participant_id': participant_session.participant_id,
                 'experience': experience
             }, room=session_id)
             
@@ -349,7 +349,7 @@ def generate_experience():
 
 @app.route('/api/adaptations', methods=['POST'])
 def trigger_adaptation():
-    """Trigger adaptation for student"""
+    """Trigger adaptation for participant"""
     try:
         data = request.json
         session_id = data.get('session_id')
@@ -359,26 +359,26 @@ def trigger_adaptation():
         if session_id not in active_sessions:
             return jsonify({'success': False, 'error': 'Session not found'}), 404
         
-        student_session = active_sessions[session_id]
+        participant_session = active_sessions[session_id]
         
         # Trigger adaptation
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         
         adaptation = loop.run_until_complete(
-            api_client.trigger_adaptation(student_session, trigger_type, confidence)
+            api_client.trigger_adaptation(participant_session, trigger_type, confidence)
         )
         loop.close()
         
         if adaptation:
             # Emit to connected clients
             socketio.emit('adaptation_triggered', {
-                'student_id': student_session.student_id,
+                'participant_id': participant_session.participant_id,
                 'adaptation': adaptation,
                 'trigger_type': trigger_type
             }, room=session_id)
             
-            logger.info(f"⚡ Adaptation triggered for {student_session.name}: {trigger_type}")
+            logger.info(f"⚡ Adaptation triggered for {participant_session.name}: {trigger_type}")
             
             return jsonify({'success': True, 'adaptation': adaptation})
         else:
@@ -390,7 +390,7 @@ def trigger_adaptation():
 
 @app.route('/api/sessions/<session_id>')
 def get_session(session_id):
-    """Get student session data"""
+    """Get participant session data"""
     if session_id in active_sessions:
         return jsonify(active_sessions[session_id].to_dict())
     else:
@@ -428,21 +428,21 @@ def handle_disconnect():
 
 @socketio.on('join_session')
 def handle_join_session(data):
-    """Join student session room"""
+    """Join participant session room"""
     session_id = data.get('session_id')
     if session_id and session_id in active_sessions:
         join_room(session_id)
-        student_session = active_sessions[session_id]
-        logger.info(f"👥 {student_session.name} joined session room: {session_id}")
-        emit('joined_session', {'session_id': session_id, 'student_name': student_session.name})
+        participant_session = active_sessions[session_id]
+        logger.info(f"👥 {participant_session.name} joined session room: {session_id}")
+        emit('joined_session', {'session_id': session_id, 'participant_name': participant_session.name})
 
 @socketio.on('engagement_update')
 def handle_engagement_update(data):
     """Handle real-time engagement updates from frontend"""
     session_id = data.get('session_id')
     if session_id and session_id in active_sessions:
-        student_session = active_sessions[session_id]
-        student_session.update_engagement(data)
+        participant_session = active_sessions[session_id]
+        participant_session.update_engagement(data)
         
         # Check for adaptation triggers
         engagement_level = data.get('engagement_level', 0.5)
@@ -458,24 +458,24 @@ def handle_engagement_update(data):
 def trigger_background_adaptation(session_id, trigger_type, confidence):
     """Background task to trigger adaptation"""
     if session_id in active_sessions:
-        student_session = active_sessions[session_id]
+        participant_session = active_sessions[session_id]
         
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         
         try:
             adaptation = loop.run_until_complete(
-                api_client.trigger_adaptation(student_session, trigger_type, confidence)
+                api_client.trigger_adaptation(participant_session, trigger_type, confidence)
             )
             
             if adaptation:
                 socketio.emit('adaptation_triggered', {
-                    'student_id': student_session.student_id,
+                    'participant_id': participant_session.participant_id,
                     'adaptation': adaptation,
                     'trigger_type': trigger_type
                 }, room=session_id)
                 
-                logger.info(f"⚡ Background adaptation: {student_session.name} - {trigger_type}")
+                logger.info(f"⚡ Background adaptation: {participant_session.name} - {trigger_type}")
         except Exception as e:
             logger.error(f"❌ Background adaptation failed: {e}")
         finally:
@@ -554,13 +554,13 @@ DEMO_INDEX_TEMPLATE = '''
         <p>Welcome to the PACT educational system demonstration. Choose your interface:</p>
         
         <div class="demo-links">
-            <a href="/student" class="demo-card">
-                <h3>👨‍🎓 Student Interface</h3>
+            <a href="/participant" class="demo-card">
+                <h3>👨‍🎓 Participant Interface</h3>
                 <p>Interactive learning experience with real-time adaptation</p>
             </a>
             
-            <a href="/teacher" class="demo-card">
-                <h3>👩‍🏫 Teacher Dashboard</h3>
+            <a href="/operator" class="demo-card">
+                <h3>👩‍🏫 Operator Dashboard</h3>
                 <p>Classroom monitoring and analytics</p>
             </a>
         </div>
@@ -580,8 +580,8 @@ DEMO_INDEX_TEMPLATE = '''
         
         <h2>🚀 Quick Demo Steps:</h2>
         <ol>
-            <li><strong>Student Experience:</strong> Click "Student Interface" → Select profile → Start learning → Watch real-time adaptation</li>
-            <li><strong>Teacher Experience:</strong> Click "Teacher Dashboard" → Monitor students → Use classroom controls</li>
+            <li><strong>Participant Experience:</strong> Click "Participant Interface" → Select profile → Start learning → Watch real-time adaptation</li>
+            <li><strong>Operator Experience:</strong> Click "Operator Dashboard" → Monitor participants → Use classroom controls</li>
             <li><strong>Integration:</strong> Open both interfaces to see real-time synchronization</li>
         </ol>
         
@@ -591,13 +591,13 @@ DEMO_INDEX_TEMPLATE = '''
 </html>
 '''
 
-TEACHER_FALLBACK_TEMPLATE = '''
+OPERATOR_FALLBACK_TEMPLATE = '''
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PACT Teacher Dashboard</title>
+    <title>PACT Operator Dashboard</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 40px; background: #f5f7fa; text-align: center; }
         .container { max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
@@ -609,21 +609,21 @@ TEACHER_FALLBACK_TEMPLATE = '''
 </head>
 <body>
     <div class="container">
-        <h1>👩‍🏫 PACT Teacher Dashboard</h1>
+        <h1>👩‍🏫 PACT Operator Dashboard</h1>
         
         <div class="error">
-            <strong>⚠️ Teacher Dashboard Not Found</strong><br>
-            The teacher dashboard HTML file is not available at the expected location.
+            <strong>⚠️ Operator Dashboard Not Found</strong><br>
+            The operator dashboard HTML file is not available at the expected location.
         </div>
         
         <div class="instructions">
             <strong>📁 Expected File Location:</strong><br>
-            <code>frontend/teacher_dashboard.html</code>
+            <code>frontend/operator_dashboard.html</code>
             
             <p><strong>🔧 To Fix This:</strong></p>
             <ol>
                 <li>Ensure the <code>frontend/</code> folder exists</li>
-                <li>Create or copy the <code>teacher_dashboard.html</code> file</li>
+                <li>Create or copy the <code>operator_dashboard.html</code> file</li>
                 <li>Refresh this page</li>
             </ol>
         </div>

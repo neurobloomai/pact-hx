@@ -2,7 +2,7 @@
  * PACT Learning Components
  * ========================
  * 
- * Interactive learning elements that adapt to student behavior and learning styles.
+ * Interactive learning elements that adapt to participant behavior and learning styles.
  * Provides engaging educational activities with real-time feedback and adaptation.
  */
 
@@ -16,7 +16,7 @@ class LearningComponentManager {
         };
         
         this.currentExperience = null;
-        this.studentProfile = null;
+        this.participantProfile = null;
         this.componentInstances = new Map();
         this.eventListeners = [];
         
@@ -41,9 +41,9 @@ class LearningComponentManager {
         });
     }
     
-    setStudentProfile(profile) {
-        this.studentProfile = profile;
-        this.log(`👨‍🎓 Student profile set: ${profile.name} (${profile.learning_style})`);
+    setParticipantProfile(profile) {
+        this.participantProfile = profile;
+        this.log(`👨‍🎓 Participant profile set: ${profile.name} (${profile.learning_style})`);
     }
     
     loadExperience(experience) {
@@ -84,11 +84,11 @@ class LearningComponentManager {
         let html = '';
         
         // Render based on learning style
-        if (this.studentProfile?.learning_style === 'visual') {
+        if (this.participantProfile?.learning_style === 'visual') {
             html += this.renderVisualComponents(content);
-        } else if (this.studentProfile?.learning_style === 'kinesthetic') {
+        } else if (this.participantProfile?.learning_style === 'kinesthetic') {
             html += this.renderKinestheticComponents(content);
-        } else if (this.studentProfile?.learning_style === 'auditory') {
+        } else if (this.participantProfile?.learning_style === 'auditory') {
             html += this.renderAuditoryComponents(content);
         } else {
             html += this.renderTextComponents(content);

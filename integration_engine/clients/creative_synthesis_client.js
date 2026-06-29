@@ -89,18 +89,18 @@ class CreativeSynthesisClient {
   }
 
   async generateExperience(requestData) {
-    const { learningObjective, studentProfile, sessionContext = {} } = requestData;
+    const { learningObjective, participantProfile, sessionContext = {} } = requestData;
     
     logger.info('🎭 Generating magical learning experience', {
       objective: learningObjective,
-      studentId: studentProfile?.studentId,
+      participantId: participantProfile?.participantId,
       joyGoal: sessionContext.joyGoal || 'high'
     });
 
     try {
       const response = await this.makeRequest('POST', '/generate-experience', {
         learning_objective: learningObjective,
-        student_profile: this.formatStudentProfile(studentProfile),
+        participant_profile: this.formatParticipantProfile(participantProfile),
         session_context: sessionContext,
         creativity_settings: {
           joy_level: 'maximum',
@@ -134,7 +134,7 @@ class CreativeSynthesisClient {
   async generateAdaptation(requestData) {
     const { 
       currentExperience, 
-      studentProfile, 
+      participantProfile, 
       adaptationReason, 
       engagementData = {},
       trustData = {}
@@ -149,7 +149,7 @@ class CreativeSynthesisClient {
     try {
       const response = await this.makeRequest('POST', '/adapt-experience', {
         current_experience: currentExperience,
-        student_profile: this.formatStudentProfile(studentProfile),
+        participant_profile: this.formatParticipantProfile(participantProfile),
         adaptation_reason: adaptationReason,
         engagement_data: engagementData,
         trust_data: trustData,
@@ -182,16 +182,16 @@ class CreativeSynthesisClient {
     }
   }
 
-  async getStudentCreativeProfile(studentId) {
-    logger.debug('👤 Fetching creative profile', { studentId });
+  async getParticipantCreativeProfile(participantId) {
+    logger.debug('👤 Fetching creative profile', { participantId });
 
     try {
-      const response = await this.makeRequest('GET', `/student-creative-profile/${studentId}`);
+      const response = await this.makeRequest('GET', `/participant-creative-profile/${participantId}`);
       
-      const profile = this.enrichCreativeProfile(response.data, studentId);
+      const profile = this.enrichCreativeProfile(response.data, participantId);
       
       logger.debug('🎨 Creative profile retrieved', {
-        studentId,
+        participantId,
         modalities: profile.preferredModalities?.length || 0,
         creativityLevel: profile.creativityLevel
       });
@@ -200,11 +200,11 @@ class CreativeSynthesisClient {
 
     } catch (error) {
       logger.warn('Using default creative profile - everyone starts somewhere! 🌱', {
-        studentId,
+        participantId,
         error: error.message
       });
 
-      return this.createDefaultCreativeProfile(studentId);
+      return this.createDefaultCreativeProfile(participantId);
     }
   }
 
@@ -247,30 +247,30 @@ class CreativeSynthesisClient {
     }
   }
 
-  formatStudentProfile(studentProfile) {
-    if (!studentProfile) return this.createDefaultProfileFormat();
+  formatParticipantProfile(participantProfile) {
+    if (!participantProfile) return this.createDefaultProfileFormat();
 
     return {
-      student_id: studentProfile.studentId,
+      participant_id: participantProfile.participantId,
       learning_preferences: {
-        preferred_modalities: studentProfile.creative?.preferredModalities || ['story', 'visual'],
-        learning_styles: studentProfile.learning?.learningStyles || ['visual', 'kinesthetic'],
-        attention_span: studentProfile.learning?.attentionSpan || 30,
-        collaboration_preference: studentProfile.learning?.collaborationPreference || 'small_group'
+        preferred_modalities: participantProfile.creative?.preferredModalities || ['story', 'visual'],
+        learning_styles: participantProfile.learning?.learningStyles || ['visual', 'kinesthetic'],
+        attention_span: participantProfile.learning?.attentionSpan || 30,
+        collaboration_preference: participantProfile.learning?.collaborationPreference || 'small_group'
       },
       engagement_history: {
-        average_engagement: studentProfile.engagement?.averageScore || 0.5,
-        engagement_trend: studentProfile.engagement?.trend || 'stable',
-        preferred_activities: studentProfile.engagement?.preferredActivities || []
+        average_engagement: participantProfile.engagement?.averageScore || 0.5,
+        engagement_trend: participantProfile.engagement?.trend || 'stable',
+        preferred_activities: participantProfile.engagement?.preferredActivities || []
       },
       trust_relationship: {
-        trust_level: studentProfile.trust?.level || 0.5,
-        trust_stage: studentProfile.trust?.stage || 'basic_comfort',
-        help_seeking_comfort: studentProfile.trust?.helpSeekingComfort || 0.5
+        trust_level: participantProfile.trust?.level || 0.5,
+        trust_stage: participantProfile.trust?.stage || 'basic_comfort',
+        help_seeking_comfort: participantProfile.trust?.helpSeekingComfort || 0.5
       },
-      creative_strengths: studentProfile.creative?.strengths || ['curiosity', 'imagination'],
-      interests: studentProfile.interests || ['discovery', 'adventure'],
-      joy_triggers: studentProfile.joyTriggers || ['success', 'surprise', 'collaboration']
+      creative_strengths: participantProfile.creative?.strengths || ['curiosity', 'imagination'],
+      interests: participantProfile.interests || ['discovery', 'adventure'],
+      joy_triggers: participantProfile.joyTriggers || ['success', 'surprise', 'collaboration']
     };
   }
 
@@ -352,9 +352,9 @@ class CreativeSynthesisClient {
     };
   }
 
-  enrichCreativeProfile(rawProfile, studentId) {
+  enrichCreativeProfile(rawProfile, participantId) {
     return {
-      studentId: studentId,
+      participantId: participantId,
       
       // Creative preferences
       preferredCreativeModalities: rawProfile.preferred_modalities || ['story', 'visual', 'game'],
@@ -511,7 +511,7 @@ class CreativeSynthesisClient {
       return this.selectBestMockExperience(requestData);
     } else if (endpoint === '/adapt-experience') {
       return this.selectBestMockAdaptation(requestData);
-    } else if (endpoint.includes('/student-creative-profile/')) {
+    } else if (endpoint.includes('/participant-creative-profile/')) {
       return this.mockResponses.profiles.default;
     }
 
@@ -524,7 +524,7 @@ class CreativeSynthesisClient {
   }
 
   selectBestMockExperience(requestData) {
-    const { learning_objective, student_profile } = requestData || {};
+    const { learning_objective, participant_profile } = requestData || {};
     const objective = learning_objective?.toLowerCase() || '';
 
     // Match by subject keywords
@@ -536,7 +536,7 @@ class CreativeSynthesisClient {
 
     // Default to first experience with personalization
     const defaultExperience = { ...this.mockResponses.experiences[0] };
-    defaultExperience.title = `✨ ${student_profile?.student_id || 'Student'}'s Learning Quest`;
+    defaultExperience.title = `✨ ${participant_profile?.participant_id || 'Participant'}'s Learning Quest`;
     defaultExperience.description = `A personalized adventure to explore: ${learning_objective}`;
     
     return defaultExperience;
@@ -553,19 +553,19 @@ class CreativeSynthesisClient {
   }
 
   generateFallbackExperience(requestData) {
-    const { learningObjective, studentProfile, sessionContext } = requestData;
-    const studentId = studentProfile?.studentId || 'Student';
+    const { learningObjective, participantProfile, sessionContext } = requestData;
+    const participantId = participantProfile?.participantId || 'Participant';
     const subject = sessionContext?.subject || 'Learning';
 
     logger.info('🎨 Creating fallback creative experience', {
       objective: learningObjective,
-      studentId,
+      participantId,
       subject
     });
 
     return {
       experienceId: this.generateId('fallback_exp'),
-      title: `✨ ${studentId}'s ${subject} Adventure`,
+      title: `✨ ${participantId}'s ${subject} Adventure`,
       description: `Let's explore "${learningObjective}" in the most magical way possible!`,
       
       creativeHooks: [
@@ -682,7 +682,7 @@ class CreativeSynthesisClient {
 
   createDefaultProfileFormat() {
     return {
-      student_id: 'unknown_student',
+      participant_id: 'unknown_participant',
       learning_preferences: {
         preferred_modalities: ['story', 'visual'],
         learning_styles: ['visual', 'kinesthetic'],
@@ -693,9 +693,9 @@ class CreativeSynthesisClient {
     };
   }
 
-  createDefaultCreativeProfile(studentId) {
+  createDefaultCreativeProfile(participantId) {
     return {
-      studentId,
+      participantId,
       preferredCreativeModalities: ['story', 'visual', 'hands_on'],
       creativityLevel: 'developing',
       imaginationStrength: 'good',

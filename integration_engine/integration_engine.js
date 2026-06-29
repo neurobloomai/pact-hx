@@ -8,7 +8,7 @@
  * - WebSocket-based communication between Python and JavaScript
  * - Unified session management and data synchronization  
  * - Real-time adaptation engine with intelligent triggers
- * - Orchestrates Creative Synthesis API, Teacher Dashboard, and Student Interface
+ * - Orchestrates Creative Synthesis API, Operator Dashboard, and Participant Interface
  */
 
 const express = require('express');
@@ -68,26 +68,26 @@ const orchestrator = new EventEmitter();
 class SessionManager {
     constructor() {
         this.sessions = new Map();
-        this.teachers = new Map();
+        this.operators = new Map();
         this.classrooms = new Map();
         this.analytics = new Map();
     }
     
-    createStudentSession(studentData) {
+    createParticipantSession(participantData) {
         const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
         
         const session = {
             sessionId,
-            studentId: studentData.student_id,
-            name: studentData.name,
-            learningStyle: studentData.learning_style,
-            gradeLevel: studentData.grade_level,
-            classroomId: studentData.classroom_id || 'default',
+            participantId: participantData.participant_id,
+            name: participantData.name,
+            learningStyle: participantData.learning_style,
+            gradeLevel: participantData.grade_level,
+            classroomId: participantData.classroom_id || 'default',
             
             // Learning state
             currentExperienceId: null,
             engagementLevel: 0.5,
-            knowledgeLevel: studentData.knowledge_level || 0.5,
+            knowledgeLevel: participantData.knowledge_level || 0.5,
             adaptationCount: 0,
             
             // Session tracking
@@ -111,7 +111,7 @@ class SessionManager {
         this.sessions.set(sessionId, session);
         this.addToClassroom(session);
         
-        console.log(`📝 Student session created: ${session.name} (${sessionId})`);
+        console.log(`📝 Participant session created: ${session.name} (${sessionId})`);
         return session;
     }
     
@@ -122,7 +122,7 @@ class SessionManager {
             this.classrooms.set(classroomId, {
                 classroomId,
                 sessions: new Set(),
-                teacher: null,
+                operator: null,
                 subject: 'Mathematics',
                 topic: 'Fractions',
                 startTime: new Date(),
@@ -205,7 +205,7 @@ class SessionManager {
                     trigger_type: trigger.type,
                     confidence: trigger.confidence,
                     context: {
-                        student_id: session.studentId,
+                        participant_id: session.participantId,
                         current_engagement: session.engagementLevel,
                         learning_style: session.learningStyle,
                         reason: trigger.reason
@@ -262,12 +262,12 @@ class SessionManager {
             averageEngagement,
             totalInteractions,
             adaptationRate: classroom.totalAdaptations / sessions.length,
-            activeStudents: sessions.length,
-            strugglingStudents: sessions.filter(s => s.engagementLevel < 0.5).length,
-            excellingStudents: sessions.filter(s => s.engagementLevel > 0.8).length
+            activeParticipants: sessions.length,
+            strugglingParticipants: sessions.filter(s => s.engagementLevel < 0.5).length,
+            excellingParticipants: sessions.filter(s => s.engagementLevel > 0.8).length
         };
         
-        // Broadcast to teachers
+        // Broadcast to operators
         orchestrator.emit('classroom_analytics_updated', {
             classroomId,
             analytics: classroom.analytics,
@@ -360,7 +360,7 @@ class APIIntegrator {
         try {
             const response = await axios.post(`${CONFIG.CREATIVE_SYNTHESIS_API}/generate`, {
                 context: {
-                    student_id: session.studentId,
+                    participant_id: session.participantId,
                     session_id: session.sessionId,
                     subject: subject,
                     grade_level: session.gradeLevel,
@@ -409,10 +409,10 @@ io.on('connection', (socket) => {
     // Send initial health status
     socket.emit('health_status', apiIntegrator.healthStatus);
     
-    // Student session management
-    socket.on('create_student_session', async (data) => {
+    // Participant session management
+    socket.on('create_participant_session', async (data) => {
         try {
-            const session = sessionManager.createStudentSession(data);
+            const session = sessionManager.createParticipantSession(data);
             session.socketId = socket.id;
             
             socket.join(`classroom_${session.classroomId}`);
@@ -427,10 +427,10 @@ io.on('connection', (socket) => {
                 }
             });
             
-            // Notify teachers
-            socket.to(`classroom_${session.classroomId}`).emit('student_joined', {
+            // Notify operators
+            socket.to(`classroom_${session.classroomId}`).emit('participant_joined', {
                 sessionId: session.sessionId,
-                studentName: session.name,
+                participantName: session.name,
                 learningStyle: session.learningStyle
             });
             
@@ -461,9 +461,9 @@ io.on('connection', (socket) => {
                     experience
                 });
                 
-                // Notify teachers
+                // Notify operators
                 socket.to(`classroom_${session.classroomId}`).emit('experience_created', {
-                    studentName: session.name,
+                    participantName: session.name,
                     experienceId: experience.experience_id,
                     topic: data.topic
                 });
@@ -486,25 +486,25 @@ io.on('connection', (socket) => {
             const session = sessionManager.sessions.get(data.sessionId);
             
             // Broadcast to classroom
-            socket.to(`classroom_${session.classroomId}`).emit('student_engagement_updated', {
+            socket.to(`classroom_${session.classroomId}`).emit('participant_engagement_updated', {
                 sessionId: session.sessionId,
-                studentName: session.name,
+                participantName: session.name,
                 engagementLevel: session.engagementLevel,
                 metrics: session.metrics
             });
         }
     });
     
-    // Teacher dashboard connections
-    socket.on('join_teacher_dashboard', (data) => {
+    // Operator dashboard connections
+    socket.on('join_operator_dashboard', (data) => {
         const classroomId = data.classroomId || 'default';
-        socket.join(`teacher_${classroomId}`);
+        socket.join(`operator_${classroomId}`);
         
         // Send current classroom data
         const classroomData = sessionManager.getClassroomData(classroomId);
         socket.emit('classroom_data', classroomData);
         
-        console.log(`👩‍🏫 Teacher joined dashboard for classroom ${classroomId}`);
+        console.log(`👩‍🏫 Operator joined dashboard for classroom ${classroomId}`);
     });
     
     // Manual adaptation triggers
@@ -544,9 +544,9 @@ io.on('connection', (socket) => {
                 console.log(`👋 ${session.name} disconnected`);
                 
                 // Notify classroom
-                socket.to(`classroom_${session.classroomId}`).emit('student_left', {
+                socket.to(`classroom_${session.classroomId}`).emit('participant_left', {
                     sessionId: session.sessionId,
-                    studentName: session.name
+                    participantName: session.name
                 });
                 break;
             }
@@ -561,16 +561,16 @@ io.on('connection', (socket) => {
 orchestrator.on('adaptation_triggered', (data) => {
     const { session, adaptation, trigger } = data;
     
-    // Notify student
+    // Notify participant
     io.to(`session_${session.sessionId}`).emit('adaptation_applied', {
         adaptation,
         trigger,
         reasoning: adaptation.reasoning
     });
     
-    // Notify teachers
-    io.to(`teacher_${session.classroomId}`).emit('adaptation_event', {
-        studentName: session.name,
+    // Notify operators
+    io.to(`operator_${session.classroomId}`).emit('adaptation_event', {
+        participantName: session.name,
         adaptationType: trigger.type,
         reasoning: adaptation.reasoning,
         timestamp: new Date().toISOString()
@@ -580,8 +580,8 @@ orchestrator.on('adaptation_triggered', (data) => {
 });
 
 orchestrator.on('classroom_analytics_updated', (data) => {
-    // Broadcast to teachers
-    io.to(`teacher_${data.classroomId}`).emit('analytics_update', data);
+    // Broadcast to operators
+    io.to(`operator_${data.classroomId}`).emit('analytics_update', data);
 });
 
 orchestrator.on('health_status_updated', (healthStatus) => {

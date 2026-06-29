@@ -18,7 +18,7 @@
     "keyPrefix": "pact:",
     "ttl": {
       "session": 3600,
-      "student": 86400,
+      "participant": 86400,
       "temporary": 300
     }
   },
@@ -49,7 +49,7 @@
       "engagement": 120000,
       "trust": 180000,
       "progress": 300000,
-      "teacher": 60000
+      "operator": 60000
     }
   },
   "dataCoordination": {
@@ -65,8 +65,8 @@
     ],
     "optional": [
       "empathetic_interaction",
-      "teacher_dashboard",
-      "student_interface"
+      "operator_dashboard",
+      "participant_interface"
     ],
     "healthCheckInterval": 60000,
     "heartbeatTimeout": 30000

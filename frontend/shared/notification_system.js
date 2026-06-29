@@ -422,31 +422,31 @@ class PACTNotificationManager {
         });
     }
     
-    teacherAlert(studentName, alertType, data = {}, options = {}) {
+    operatorAlert(participantName, alertType, data = {}, options = {}) {
         const alertConfigs = {
-            'student_struggling': {
+            'participant_struggling': {
                 type: 'warning',
-                title: `😰 ${studentName} needs help`,
+                title: `😰 ${participantName} needs help`,
                 message: `Engagement dropped to ${Math.round(data.engagement * 100)}%`,
                 actions: [
-                    { text: 'Assist Student', action: () => this.emit('assistStudent', { studentName, data }) },
-                    { text: 'View Details', action: () => this.emit('viewStudent', { studentName }) }
+                    { text: 'Assist Participant', action: () => this.emit('assistParticipant', { participantName, data }) },
+                    { text: 'View Details', action: () => this.emit('viewParticipant', { participantName }) }
                 ]
             },
-            'student_excelling': {
+            'participant_excelling': {
                 type: 'success',
-                title: `🌟 ${studentName} is excelling`,
+                title: `🌟 ${participantName} is excelling`,
                 message: `High engagement (${Math.round(data.engagement * 100)}%) and progress`,
                 actions: [
-                    { text: 'Give Challenge', action: () => this.emit('challengeStudent', { studentName }) }
+                    { text: 'Give Challenge', action: () => this.emit('challengeParticipant', { participantName }) }
                 ]
             },
             'adaptation_triggered': {
                 type: 'info',
-                title: `⚡ ${studentName} - Content Adapted`,
+                title: `⚡ ${participantName} - Content Adapted`,
                 message: data.reasoning || 'Learning experience modified',
                 actions: [
-                    { text: 'View Adaptation', action: () => this.emit('viewAdaptation', { studentName, data }) }
+                    { text: 'View Adaptation', action: () => this.emit('viewAdaptation', { participantName, data }) }
                 ]
             }
         };
@@ -457,7 +457,7 @@ class PACTNotificationManager {
         return this.show(config.message, config.type, {
             title: config.title,
             actions: config.actions,
-            duration: alertType === 'student_struggling' ? 0 : this.options.defaultDuration,
+            duration: alertType === 'participant_struggling' ? 0 : this.options.defaultDuration,
             ...options
         });
     }
@@ -826,7 +826,7 @@ class PACTNotificationManager {
 }
 
 // Specialized notification managers for different contexts
-class StudentNotificationManager extends PACTNotificationManager {
+class ParticipantNotificationManager extends PACTNotificationManager {
     constructor(options = {}) {
         super({
             position: 'top-right',
@@ -869,7 +869,7 @@ class StudentNotificationManager extends PACTNotificationManager {
     }
 }
 
-class TeacherNotificationManager extends PACTNotificationManager {
+class OperatorNotificationManager extends PACTNotificationManager {
     constructor(options = {}) {
         super({
             position: 'top-left',
@@ -879,8 +879,8 @@ class TeacherNotificationManager extends PACTNotificationManager {
         });
     }
     
-    studentNeedsAttention(studentName, details, options = {}) {
-        return this.teacherAlert(studentName, 'student_struggling', details, {
+    participantNeedsAttention(participantName, details, options = {}) {
+        return this.operatorAlert(participantName, 'participant_struggling', details, {
             persistent: true,
             priority: 'high',
             ...options
@@ -895,8 +895,8 @@ class TeacherNotificationManager extends PACTNotificationManager {
         });
     }
     
-    adaptationAlert(studentName, adaptationType, reasoning, options = {}) {
-        return this.teacherAlert(studentName, 'adaptation_triggered', { 
+    adaptationAlert(participantName, adaptationType, reasoning, options = {}) {
+        return this.operatorAlert(participantName, 'adaptation_triggered', { 
             adaptationType, 
             reasoning 
         }, options);
@@ -906,10 +906,10 @@ class TeacherNotificationManager extends PACTNotificationManager {
 // Factory function
 function createNotificationManager(type = 'general', options = {}) {
     switch (type) {
-        case 'student':
-            return new StudentNotificationManager(options);
-        case 'teacher':
-            return new TeacherNotificationManager(options);
+        case 'participant':
+            return new ParticipantNotificationManager(options);
+        case 'operator':
+            return new OperatorNotificationManager(options);
         default:
             return new PACTNotificationManager(options);
     }
@@ -954,8 +954,8 @@ function notifyInfo(message, options = {}) {
 if (typeof window !== 'undefined') {
     // Browser environment
     window.PACTNotificationManager = PACTNotificationManager;
-    window.StudentNotificationManager = StudentNotificationManager;
-    window.TeacherNotificationManager = TeacherNotificationManager;
+    window.ParticipantNotificationManager = ParticipantNotificationManager;
+    window.OperatorNotificationManager = OperatorNotificationManager;
     window.createNotificationManager = createNotificationManager;
     window.getGlobalNotificationManager = getGlobalNotificationManager;
     
@@ -971,8 +971,8 @@ if (typeof module !== 'undefined' && module.exports) {
     // Node.js environment
     module.exports = {
         PACTNotificationManager,
-        StudentNotificationManager,
-        TeacherNotificationManager,
+        ParticipantNotificationManager,
+        OperatorNotificationManager,
         createNotificationManager
     };
 }

@@ -12,7 +12,7 @@ class DataCoordinator extends EventEmitter {
     this.config = integrationServer.config;
     
     // Data storage and caching
-    this.studentProfiles = new Map();
+    this.participantProfiles = new Map();
     this.sessionData = new Map();
     this.realTimeData = new Map();
     this.dataBuffer = new Map();
@@ -126,7 +126,7 @@ class DataCoordinator extends EventEmitter {
 
   // Main event handlers for real-time data
   async handleEngagementUpdate(socket, data) {
-    const { studentId, sessionId, engagementData } = data;
+    const { participantId, sessionId, engagementData } = data;
     
     try {
       // Validate data
@@ -138,17 +138,17 @@ class DataCoordinator extends EventEmitter {
       }
 
       // Process and enrich data
-      const processedData = await handler.process(studentId, engagementData, sessionId);
+      const processedData = await handler.process(participantId, engagementData, sessionId);
 
-      // Update student profile
-      await this.updateStudentEngagementProfile(studentId, processedData);
+      // Update participant profile
+      await this.updateParticipantEngagementProfile(participantId, processedData);
 
       // Buffer for synchronization
-      this.bufferDataUpdate(studentId, 'engagement', processedData);
+      this.bufferDataUpdate(participantId, 'engagement', processedData);
 
       // Emit real-time update
       this.emitRealTimeUpdate('engagement_update', {
-        studentId,
+        participantId,
         sessionId,
         data: processedData,
         timestamp: Date.now()
@@ -156,7 +156,7 @@ class DataCoordinator extends EventEmitter {
 
       // Check for immediate adaptation needs
       const adaptationNeeded = await this.assessImmediateAdaptationNeed(
-        studentId, 'engagement', processedData
+        participantId, 'engagement', processedData
       );
 
       // Send acknowledgment
@@ -167,7 +167,7 @@ class DataCoordinator extends EventEmitter {
       });
 
       logger.debug('📈 Engagement update processed', {
-        studentId,
+        participantId,
         sessionId,
         score: processedData.currentScore,
         trend: processedData.trend
@@ -175,7 +175,7 @@ class DataCoordinator extends EventEmitter {
 
     } catch (error) {
       logger.error('❌ Failed to handle engagement update', {
-        studentId,
+        participantId,
         sessionId,
         error: error.message
       });
@@ -188,7 +188,7 @@ class DataCoordinator extends EventEmitter {
   }
 
   async handleTrustEvent(socket, data) {
-    const { studentId, sessionId, trustEvent } = data;
+    const { participantId, sessionId, trustEvent } = data;
     
     try {
       // Validate trust event
@@ -200,17 +200,17 @@ class DataCoordinator extends EventEmitter {
       }
 
       // Process trust event
-      const processedEvent = await handler.process(studentId, trustEvent, sessionId);
+      const processedEvent = await handler.process(participantId, trustEvent, sessionId);
 
-      // Update student trust profile
-      await this.updateStudentTrustProfile(studentId, processedEvent);
+      // Update participant trust profile
+      await this.updateParticipantTrustProfile(participantId, processedEvent);
 
       // Buffer for synchronization
-      this.bufferDataUpdate(studentId, 'trust', processedEvent);
+      this.bufferDataUpdate(participantId, 'trust', processedEvent);
 
       // Emit real-time update
       this.emitRealTimeUpdate('trust_event', {
-        studentId,
+        participantId,
         sessionId,
         event: processedEvent,
         timestamp: Date.now()
@@ -218,7 +218,7 @@ class DataCoordinator extends EventEmitter {
 
       // Check for trust-based adaptations
       const adaptationNeeded = await this.assessImmediateAdaptationNeed(
-        studentId, 'trust', processedEvent
+        participantId, 'trust', processedEvent
       );
 
       socket.emit('trust_event_processed', {
@@ -228,7 +228,7 @@ class DataCoordinator extends EventEmitter {
       });
 
       logger.debug('🤝 Trust event processed', {
-        studentId,
+        participantId,
         sessionId,
         eventType: processedEvent.type,
         trustLevel: processedEvent.newTrustLevel
@@ -236,7 +236,7 @@ class DataCoordinator extends EventEmitter {
 
     } catch (error) {
       logger.error('❌ Failed to handle trust event', {
-        studentId,
+        participantId,
         sessionId,
         error: error.message
       });
@@ -248,8 +248,8 @@ class DataCoordinator extends EventEmitter {
     }
   }
 
-  async handleStudentInteraction(socket, data) {
-    const { studentId, sessionId, interaction } = data;
+  async handleParticipantInteraction(socket, data) {
+    const { participantId, sessionId, interaction } = data;
     
     try {
       // Validate interaction
@@ -261,31 +261,31 @@ class DataCoordinator extends EventEmitter {
       }
 
       // Process interaction
-      const processedInteraction = await handler.process(studentId, interaction, sessionId);
+      const processedInteraction = await handler.process(participantId, interaction, sessionId);
 
-      // Update student interaction history
-      await this.updateStudentInteractionHistory(studentId, processedInteraction);
+      // Update participant interaction history
+      await this.updateParticipantInteractionHistory(participantId, processedInteraction);
 
       // Buffer for synchronization
-      this.bufferDataUpdate(studentId, 'interaction', processedInteraction);
+      this.bufferDataUpdate(participantId, 'interaction', processedInteraction);
 
       // Emit to relevant components
-      this.emitRealTimeUpdate('student_interaction', {
-        studentId,
+      this.emitRealTimeUpdate('participant_interaction', {
+        participantId,
         sessionId,
         interaction: processedInteraction,
         timestamp: Date.now()
       });
 
-      logger.debug('👤 Student interaction processed', {
-        studentId,
+      logger.debug('👤 Participant interaction processed', {
+        participantId,
         sessionId,
         interactionType: processedInteraction.type
       });
 
     } catch (error) {
-      logger.error('❌ Failed to handle student interaction', {
-        studentId,
+      logger.error('❌ Failed to handle participant interaction', {
+        participantId,
         sessionId,
         error: error.message
       });
@@ -293,11 +293,11 @@ class DataCoordinator extends EventEmitter {
   }
 
   // Data processing methods
-  async processEngagementData(studentId, engagementData, sessionId) {
+  async processEngagementData(participantId, engagementData, sessionId) {
     const timestamp = Date.now();
     
-    // Get current student profile for context
-    const currentProfile = await this.getStudentProfile(studentId);
+    // Get current participant profile for context
+    const currentProfile = await this.getParticipantProfile(participantId);
     const previousEngagement = currentProfile?.engagement || {};
 
     // Calculate trend
@@ -310,7 +310,7 @@ class DataCoordinator extends EventEmitter {
     const level = this.determineEngagementLevel(engagementData.score || 0.5);
 
     // Calculate session progress
-    const sessionProgress = await this.calculateSessionProgress(studentId, sessionId);
+    const sessionProgress = await this.calculateSessionProgress(participantId, sessionId);
 
     return {
       timestamp,
@@ -328,11 +328,11 @@ class DataCoordinator extends EventEmitter {
     };
   }
 
-  async processTrustData(studentId, trustEvent, sessionId) {
+  async processTrustData(participantId, trustEvent, sessionId) {
     const timestamp = Date.now();
     
     // Get current trust profile
-    const currentProfile = await this.getStudentProfile(studentId);
+    const currentProfile = await this.getParticipantProfile(participantId);
     const previousTrust = currentProfile?.trust || { level: 0.5, events: [] };
 
     // Calculate new trust level based on event
@@ -359,7 +359,7 @@ class DataCoordinator extends EventEmitter {
     };
   }
 
-  async processInteractionData(studentId, interaction, sessionId) {
+  async processInteractionData(participantId, interaction, sessionId) {
     const timestamp = Date.now();
     
     // Classify interaction type
@@ -384,11 +384,11 @@ class DataCoordinator extends EventEmitter {
     };
   }
 
-  async processProgressData(studentId, progressData, sessionId) {
+  async processProgressData(participantId, progressData, sessionId) {
     const timestamp = Date.now();
     
     // Calculate learning velocity
-    const velocity = await this.calculateLearningVelocity(studentId, progressData);
+    const velocity = await this.calculateLearningVelocity(participantId, progressData);
     
     // Assess comprehension level
     const comprehension = this.assessComprehension(progressData);
@@ -405,7 +405,7 @@ class DataCoordinator extends EventEmitter {
     };
   }
 
-  async processAdaptationData(studentId, adaptationData, sessionId) {
+  async processAdaptationData(participantId, adaptationData, sessionId) {
     const timestamp = Date.now();
     
     return {
@@ -518,23 +518,23 @@ class DataCoordinator extends EventEmitter {
     };
   }
 
-  // Student profile management
-  async getStudentProfile(studentId) {
+  // Participant profile management
+  async getParticipantProfile(participantId) {
     // Check cache first
-    let profile = this.studentProfiles.get(studentId);
+    let profile = this.participantProfiles.get(participantId);
     
     if (!profile) {
       // Try to load from Redis
       if (this.redis) {
         try {
-          const cachedProfile = await this.redis.get(`student:${studentId}`);
+          const cachedProfile = await this.redis.get(`participant:${participantId}`);
           if (cachedProfile) {
             profile = JSON.parse(cachedProfile);
-            this.studentProfiles.set(studentId, profile);
+            this.participantProfiles.set(participantId, profile);
           }
         } catch (error) {
-          logger.warn('Failed to load student profile from Redis', {
-            studentId,
+          logger.warn('Failed to load participant profile from Redis', {
+            participantId,
             error: error.message
           });
         }
@@ -542,17 +542,17 @@ class DataCoordinator extends EventEmitter {
       
       // Create default profile if not found
       if (!profile) {
-        profile = this.createDefaultStudentProfile(studentId);
-        this.studentProfiles.set(studentId, profile);
+        profile = this.createDefaultParticipantProfile(participantId);
+        this.participantProfiles.set(participantId, profile);
       }
     }
     
     return profile;
   }
 
-  createDefaultStudentProfile(studentId) {
+  createDefaultParticipantProfile(participantId) {
     return {
-      studentId,
+      participantId,
       createdAt: Date.now(),
       lastUpdated: Date.now(),
       engagement: {
@@ -585,8 +585,8 @@ class DataCoordinator extends EventEmitter {
     };
   }
 
-  async updateStudentEngagementProfile(studentId, engagementData) {
-    const profile = await this.getStudentProfile(studentId);
+  async updateParticipantEngagementProfile(participantId, engagementData) {
+    const profile = await this.getParticipantProfile(participantId);
     
     // Update engagement section
     profile.engagement.currentScore = engagementData.currentScore;
@@ -614,11 +614,11 @@ class DataCoordinator extends EventEmitter {
     profile.lastUpdated = Date.now();
     
     // Update cache
-    this.studentProfiles.set(studentId, profile);
+    this.participantProfiles.set(participantId, profile);
   }
 
-  async updateStudentTrustProfile(studentId, trustData) {
-    const profile = await this.getStudentProfile(studentId);
+  async updateParticipantTrustProfile(participantId, trustData) {
+    const profile = await this.getParticipantProfile(participantId);
     
     // Update trust section
     profile.trust.level = trustData.newTrustLevel;
@@ -653,11 +653,11 @@ class DataCoordinator extends EventEmitter {
     profile.lastUpdated = Date.now();
     
     // Update cache
-    this.studentProfiles.set(studentId, profile);
+    this.participantProfiles.set(participantId, profile);
   }
 
-  async updateStudentInteractionHistory(studentId, interactionData) {
-    const profile = await this.getStudentProfile(studentId);
+  async updateParticipantInteractionHistory(participantId, interactionData) {
+    const profile = await this.getParticipantProfile(participantId);
     
     // Update interactions section
     profile.interactions.total += 1;
@@ -698,7 +698,7 @@ class DataCoordinator extends EventEmitter {
     profile.lastUpdated = Date.now();
     
     // Update cache
-    this.studentProfiles.set(studentId, profile);
+    this.participantProfiles.set(participantId, profile);
   }
 
   // Utility methods
@@ -784,7 +784,7 @@ class DataCoordinator extends EventEmitter {
     return ((currentAverage * (count - 1)) + newValue) / count;
   }
 
-  async calculateSessionProgress(studentId, sessionId) {
+  async calculateSessionProgress(participantId, sessionId) {
     // This would integrate with session management to determine progress
     // For now, return a placeholder
     return {
@@ -794,8 +794,8 @@ class DataCoordinator extends EventEmitter {
     };
   }
 
-  async calculateLearningVelocity(studentId, progressData) {
-    // Calculate how quickly student is learning based on progress data
+  async calculateLearningVelocity(participantId, progressData) {
+    // Calculate how quickly participant is learning based on progress data
     // This is a simplified implementation
     const timeSpent = progressData.timeSpent || 1;
     const successRate = progressData.successRate || 0.5;
@@ -815,13 +815,13 @@ class DataCoordinator extends EventEmitter {
   }
 
   // Data buffering and synchronization
-  bufferDataUpdate(studentId, dataType, data) {
-    if (!this.dataBuffer.has(studentId)) {
-      this.dataBuffer.set(studentId, new Map());
+  bufferDataUpdate(participantId, dataType, data) {
+    if (!this.dataBuffer.has(participantId)) {
+      this.dataBuffer.set(participantId, new Map());
     }
     
-    const studentBuffer = this.dataBuffer.get(studentId);
-    studentBuffer.set(dataType, {
+    const participantBuffer = this.dataBuffer.get(participantId);
+    participantBuffer.set(dataType, {
       data,
       timestamp: Date.now()
     });
@@ -837,14 +837,14 @@ class DataCoordinator extends EventEmitter {
     
     const flushPromises = [];
     
-    for (const [studentId, studentBuffer] of this.dataBuffer.entries()) {
-      for (const [dataType, bufferedData] of studentBuffer.entries()) {
+    for (const [participantId, participantBuffer] of this.dataBuffer.entries()) {
+      for (const [dataType, bufferedData] of participantBuffer.entries()) {
         const handler = this.dataHandlers.get(dataType);
         if (handler && handler.sync) {
           flushPromises.push(
-            handler.sync(studentId, bufferedData.data).catch(error => {
+            handler.sync(participantId, bufferedData.data).catch(error => {
               logger.error('Failed to sync buffered data', {
-                studentId,
+                participantId,
                 dataType,
                 error: error.message
               });
@@ -853,8 +853,8 @@ class DataCoordinator extends EventEmitter {
         }
       }
       
-      // Clear student buffer after processing
-      studentBuffer.clear();
+      // Clear participant buffer after processing
+      participantBuffer.clear();
     }
     
     // Clear the main buffer
@@ -879,19 +879,19 @@ class DataCoordinator extends EventEmitter {
   }
 
   async synchronizeDataAcrossComponents() {
-    // Persist student profiles to Redis
+    // Persist participant profiles to Redis
     if (this.redis) {
       const profilePromises = [];
       
-      for (const [studentId, profile] of this.studentProfiles.entries()) {
+      for (const [participantId, profile] of this.participantProfiles.entries()) {
         profilePromises.push(
           this.redis.setEx(
-            `student:${studentId}`,
+            `participant:${participantId}`,
             86400, // 24 hour TTL
             JSON.stringify(profile)
           ).catch(error => {
-            logger.error('Failed to persist student profile', {
-              studentId,
+            logger.error('Failed to persist participant profile', {
+              participantId,
               error: error.message
             });
           })
@@ -904,34 +904,34 @@ class DataCoordinator extends EventEmitter {
     // Emit synchronization event for components
     this.emitRealTimeUpdate('data_sync_complete', {
       timestamp: Date.now(),
-      profilesCount: this.studentProfiles.size
+      profilesCount: this.participantProfiles.size
     });
   }
 
   // Data sync methods for each data type
-  async syncEngagementData(studentId, data) {
+  async syncEngagementData(participantId, data) {
     // Sync engagement data with external systems if needed
-    logger.debug('Syncing engagement data', { studentId });
+    logger.debug('Syncing engagement data', { participantId });
   }
 
-  async syncTrustData(studentId, data) {
+  async syncTrustData(participantId, data) {
     // Sync trust data with external systems if needed
-    logger.debug('Syncing trust data', { studentId });
+    logger.debug('Syncing trust data', { participantId });
   }
 
-  async syncInteractionData(studentId, data) {
+  async syncInteractionData(participantId, data) {
     // Sync interaction data with external systems if needed
-    logger.debug('Syncing interaction data', { studentId });
+    logger.debug('Syncing interaction data', { participantId });
   }
 
-  async syncProgressData(studentId, data) {
+  async syncProgressData(participantId, data) {
     // Sync progress data with external systems if needed
-    logger.debug('Syncing progress data', { studentId });
+    logger.debug('Syncing progress data', { participantId });
   }
 
-  async syncAdaptationData(studentId, data) {
+  async syncAdaptationData(participantId, data) {
     // Sync adaptation data with external systems if needed
-    logger.debug('Syncing adaptation data', { studentId });
+    logger.debug('Syncing adaptation data', { participantId });
   }
 
   // Real-time event emission
@@ -943,7 +943,7 @@ class DataCoordinator extends EventEmitter {
     this.emit(eventType, data);
   }
 
-  async assessImmediateAdaptationNeed(studentId, dataType, processedData) {
+  async assessImmediateAdaptationNeed(participantId, dataType, processedData) {
     // Quick assessment for immediate adaptation needs
     if (dataType === 'engagement' && processedData.currentScore < 0.3) {
       return {
@@ -965,12 +965,12 @@ class DataCoordinator extends EventEmitter {
   }
 
   // Public API methods
-  async getUnifiedStudentProfile(studentId) {
-    return await this.getStudentProfile(studentId);
+  async getUnifiedParticipantProfile(participantId) {
+    return await this.getParticipantProfile(participantId);
   }
 
-  async updateStudentProfile(studentId, updates) {
-    const profile = await this.getStudentProfile(studentId);
+  async updateParticipantProfile(participantId, updates) {
+    const profile = await this.getParticipantProfile(participantId);
     
     // Apply updates
     Object.keys(updates).forEach(key => {
@@ -984,11 +984,11 @@ class DataCoordinator extends EventEmitter {
     profile.lastUpdated = Date.now();
     
     // Update cache
-    this.studentProfiles.set(studentId, profile);
+    this.participantProfiles.set(participantId, profile);
     
     // Emit update event
-    this.emitRealTimeUpdate('student_profile_updated', {
-      studentId,
+    this.emitRealTimeUpdate('participant_profile_updated', {
+      participantId,
       updatedFields: Object.keys(updates),
       timestamp: Date.now()
     });
@@ -998,7 +998,7 @@ class DataCoordinator extends EventEmitter {
 
   getDataStats() {
     return {
-      studentProfiles: this.studentProfiles.size,
+      participantProfiles: this.participantProfiles.size,
       bufferedUpdates: this.dataBuffer.size,
       dataHandlers: this.dataHandlers.size,
       redisConnected: !!this.redis?.isReady

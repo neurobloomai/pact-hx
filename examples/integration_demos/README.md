@@ -5,9 +5,9 @@ Full-stack adaptive educational system with real-time orchestration and intellig
 ## 🎯 Complete System Overview
 
 ```
-📊 Teacher Dashboard (localhost:5001) ←→ 🔧 Integration Engine (localhost:3000)
+📊 Operator Dashboard (localhost:5001) ←→ 🔧 Integration Engine (localhost:3000)
                                               ↕
-🎓 Student Interface (localhost:5000) ←→ 🧠 Creative Synthesis API (localhost:8000)
+🎓 Participant Interface (localhost:5000) ←→ 🧠 Creative Synthesis API (localhost:8000)
 ```
 
 ## 🏗️ Complete Architecture
@@ -22,9 +22,9 @@ pact-hx/
 │   ├── package.json
 │   └── README.md
 ├── frontend/                         # Frontend Components
-│   ├── teacher_dashboard.html        # Teacher monitoring interface
-│   ├── student_interface/            # Student learning components
-│   │   ├── demo.html                # Main student interface
+│   ├── operator_dashboard.html        # Operator monitoring interface
+│   ├── participant_interface/            # Participant learning components
+│   │   ├── demo.html                # Main participant interface
 │   │   ├── engagement_tracker.js    # Real-time tracking
 │   │   └── learning_components.js   # Interactive elements
 │   ├── shared/                      # Shared components
@@ -72,27 +72,27 @@ python basic_pact_demo.py
 
 ### **Step 4: Open Interfaces**
 ```bash
-# Student Interface
-open frontend/student_interface/demo.html
+# Participant Interface
+open frontend/participant_interface/demo.html
 # or serve it:
-# cd frontend/student_interface/ && python -m http.server 8080
+# cd frontend/participant_interface/ && python -m http.server 8080
 
-# Teacher Dashboard  
-open frontend/teacher_dashboard.html
+# Operator Dashboard  
+open frontend/operator_dashboard.html
 # or serve it:
 # cd frontend/ && python -m http.server 5001
 ```
 
 ## 🎮 Complete Demo Experience
 
-### **1. Teacher Experience:**
-1. **Open Teacher Dashboard** → `frontend/teacher_dashboard.html`
-2. **Monitor Students** → Real-time engagement tracking across classroom
+### **1. Operator Experience:**
+1. **Open Operator Dashboard** → `frontend/operator_dashboard.html`
+2. **Monitor Participants** → Real-time engagement tracking across classroom
 3. **Trigger Interventions** → Manual assistance and engagement boosts
 4. **View Analytics** → Comprehensive insights and performance trends
 
-### **2. Student Experience:**
-1. **Open Student Interface** → `frontend/student_interface/demo.html`
+### **2. Participant Experience:**
+1. **Open Participant Interface** → `frontend/participant_interface/demo.html`
 2. **Select Profile** → Choose learning style and preferences
 3. **Start Learning** → AI generates personalized content via APIs
 4. **Interact Naturally** → Engagement automatically tracked via `engagement_tracker.js`
@@ -101,7 +101,7 @@ open frontend/teacher_dashboard.html
 
 ### **3. System Integration Flow:**
 ```
-Student Browser (frontend/student_interface/) 
+Participant Browser (frontend/participant_interface/) 
     ↕ (WebSocket + HTTP)
 Demo Server (examples/integration_demos/basic_pact_demo.py)
     ↕ (WebSocket coordination)  
@@ -109,7 +109,7 @@ Integration Engine (integration_engine/integration_engine.js)
     ↕ (HTTP API calls)
 Creative Synthesis API (integration/creative_synthesis_api.py)
     ↕ (Real-time updates)
-Teacher Dashboard (frontend/teacher_dashboard.html)
+Operator Dashboard (frontend/operator_dashboard.html)
 ```
 
 ## 🔧 System Components
@@ -138,18 +138,18 @@ Teacher Dashboard (frontend/teacher_dashboard.html)
   - WebSocket communication hub
   - Development and testing support
 
-### **Student Interface (frontend/student_interface/)**
-- **Purpose:** Interactive learning experience for students
+### **Participant Interface (frontend/participant_interface/)**
+- **Purpose:** Interactive learning experience for participants
 - **Features:**
   - Personalized content delivery
   - Real-time engagement detection
   - Learning style adaptation
   - Progress tracking and feedback
 
-### **Teacher Dashboard (frontend/teacher_dashboard.html)**
+### **Operator Dashboard (frontend/operator_dashboard.html)**
 - **Purpose:** Classroom monitoring and control interface  
 - **Features:**
-  - Live student monitoring
+  - Live participant monitoring
   - Real-time analytics and insights
   - Intervention controls and tools
   - Classroom management features
@@ -159,15 +159,15 @@ Teacher Dashboard (frontend/teacher_dashboard.html)
 ### **Real-Time Features:**
 ✅ **Live Engagement Tracking** - Mouse movements, clicks, focus time  
 ✅ **Automatic Adaptations** - Content modifies based on behavior  
-✅ **Teacher Notifications** - Instant alerts for struggling students  
+✅ **Operator Notifications** - Instant alerts for struggling participants  
 ✅ **Cross-Component Sync** - All interfaces update simultaneously  
 ✅ **Intelligent Triggers** - AI detects confusion, mastery, engagement drops  
 
 ### **Demo Scenarios:**
-1. **Student starts learning** → Content generates → Teacher sees new session
-2. **Engagement drops** → Auto-adaptation triggers → Teacher gets alert
-3. **Teacher assists student** → Manual intervention → Student gets help
-4. **Student masters concept** → Advanced content unlocks → Progress tracked
+1. **Participant starts learning** → Content generates → Operator sees new session
+2. **Engagement drops** → Auto-adaptation triggers → Operator gets alert
+3. **Operator assists participant** → Manual intervention → Participant gets help
+4. **Participant masters concept** → Advanced content unlocks → Progress tracked
 
 ## 🎯 Success Indicators
 
@@ -224,10 +224,10 @@ curl http://localhost:5000/api/health  # Demo Server
 adaptationThreshold: 0.5  // Easier to trigger
 ```
 
-**Teacher dashboard not updating:**
+**Operator dashboard not updating:**
 ```bash
 # Verify WebSocket connection to Integration Engine
-# Check teacher_dashboard.html console for errors
+# Check operator_dashboard.html console for errors
 ```
 
 ## 🎉 Complete System Validation
@@ -235,13 +235,13 @@ adaptationThreshold: 0.5  // Easier to trigger
 ✅ **All 4 Commits Complete:**
 -  ✅ Integration Engine (Node.js orchestration)
 -  ✅ Creative Synthesis API (FastAPI wrapper)  
--  ✅ Frontend Components (Student + Teacher interfaces)
+-  ✅ Frontend Components (Participant + Operator interfaces)
 -  ✅ Working Demo (Complete integration)
 
 ✅ **Full Integration Working:**
 - Real-time communication between all components
 - End-to-end learning experience
-- Teacher monitoring and control
+- Operator monitoring and control
 - Intelligent adaptation system
 
 ## 🚀 Ready for Enhancement

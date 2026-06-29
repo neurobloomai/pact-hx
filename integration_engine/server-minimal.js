@@ -77,7 +77,7 @@ class MinimalPACTServer {
         success: true,
         sessionId,
         message: '🎭 Minimal session created - full magic coming soon!',
-        studentId: req.body.studentId,
+        participantId: req.body.participantId,
         learningObjective: req.body.learningObjective
       });
     });

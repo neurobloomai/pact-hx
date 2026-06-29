@@ -3,7 +3,7 @@
  * =====================
  * 
  * Reusable chart components for engagement and performance visualization.
- * Provides real-time updating charts for both student and teacher interfaces.
+ * Provides real-time updating charts for both participant and operator interfaces.
  */
 
 class PACTChartManager {
@@ -139,7 +139,7 @@ class PACTChartManager {
                                 const value = context.parsed;
                                 const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                 const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
-                                return `${label}: ${value} students (${percentage}%)`;
+                                return `${label}: ${value} participants (${percentage}%)`;
                             }
                         }
                     }
@@ -438,7 +438,7 @@ class ClassroomOverviewChart {
         this.canvasId = canvasId;
     }
     
-    updateStudentCounts(highEngagement, mediumEngagement, lowEngagement, inactive) {
+    updateParticipantCounts(highEngagement, mediumEngagement, lowEngagement, inactive) {
         this.chart.data.datasets[0].data = [
             highEngagement,
             mediumEngagement, 
@@ -448,11 +448,11 @@ class ClassroomOverviewChart {
         this.chart.update();
     }
     
-    updateFromStudentData(students) {
+    updateFromParticipantData(participants) {
         let high = 0, medium = 0, low = 0, inactive = 0;
         
-        students.forEach(student => {
-            const engagement = student.engagementLevel || 0;
+        participants.forEach(participant => {
+            const engagement = participant.engagementLevel || 0;
             
             if (engagement > 0.8) high++;
             else if (engagement > 0.5) medium++;
@@ -460,22 +460,22 @@ class ClassroomOverviewChart {
             else inactive++;
         });
         
-        this.updateStudentCounts(high, medium, low, inactive);
+        this.updateParticipantCounts(high, medium, low, inactive);
         
-        return { high, medium, low, inactive, total: students.length };
+        return { high, medium, low, inactive, total: participants.length };
     }
     
     getInsights() {
         const data = this.chart.data.datasets[0].data;
         const total = data.reduce((acc, val) => acc + val, 0);
         
-        if (total === 0) return 'No students active';
+        if (total === 0) return 'No participants active';
         
         const percentages = data.map(val => (val / total) * 100);
         const [high, medium, low, inactive] = percentages;
         
         if (high > 60) return 'Excellent classroom engagement!';
-        if (low + inactive > 50) return 'Many students need attention';
+        if (low + inactive > 50) return 'Many participants need attention';
         if (medium > 50) return 'Good overall engagement';
         return 'Mixed engagement levels';
     }
@@ -493,10 +493,10 @@ class ProgressChart {
         this.canvasId = canvasId;
     }
     
-    updateStudentProgress(studentData) {
-        const labels = studentData.map(student => student.name);
-        const progress = studentData.map(student => 
-            Math.round((student.knowledgeLevel || 0) * 100)
+    updateParticipantProgress(participantData) {
+        const labels = participantData.map(participant => participant.name);
+        const progress = participantData.map(participant => 
+            Math.round((participant.knowledgeLevel || 0) * 100)
         );
         
         this.chart.data.labels = labels;
@@ -513,8 +513,8 @@ class ProgressChart {
         this.chart.update();
     }
     
-    addStudent(studentName, progress) {
-        this.chart.data.labels.push(studentName);
+    addParticipant(participantName, progress) {
+        this.chart.data.labels.push(participantName);
         this.chart.data.datasets[0].data.push(progress);
         
         // Update colors
@@ -529,12 +529,12 @@ class ProgressChart {
         this.chart.update();
     }
     
-    updateStudentProgress(studentName, newProgress) {
-        const index = this.chart.data.labels.indexOf(studentName);
+    updateParticipantProgress(participantName, newProgress) {
+        const index = this.chart.data.labels.indexOf(participantName);
         if (index !== -1) {
             this.chart.data.datasets[0].data[index] = newProgress;
             
-            // Update color for this student
+            // Update color for this participant
             const colors = this.chart.data.datasets[0].backgroundColor;
             if (newProgress >= 80) colors[index] = '#27ae60';
             else if (newProgress >= 60) colors[index] = '#f39c12';
@@ -563,14 +563,14 @@ class AdaptationTimelineChart {
         };
     }
     
-    addAdaptationEvent(timestamp, adaptationType, engagementLevel, studentName = '') {
+    addAdaptationEvent(timestamp, adaptationType, engagementLevel, participantName = '') {
         const datasetIndex = this.adaptationTypes[adaptationType];
         
         if (datasetIndex !== undefined) {
             this.chart.data.datasets[datasetIndex].data.push({
                 x: timestamp,
                 y: engagementLevel,
-                studentName: studentName
+                participantName: participantName
             });
             
             this.chart.update();
@@ -799,7 +799,7 @@ class ChartPerformanceMonitor {
 }
 
 // Factory Functions
-function createStudentEngagementChart(canvasId, options = {}) {
+function createParticipantEngagementChart(canvasId, options = {}) {
     const chartManager = new PACTChartManager();
     return chartManager.createEngagementLineChart(canvasId, {
         plugins: {
@@ -812,7 +812,7 @@ function createStudentEngagementChart(canvasId, options = {}) {
     });
 }
 
-function createTeacherClassroomCharts(config = {}) {
+function createOperatorClassroomCharts(config = {}) {
     const chartManager = new PACTChartManager();
     const charts = {};
     
@@ -836,7 +836,7 @@ function createTeacherClassroomCharts(config = {}) {
             plugins: {
                 title: {
                     display: true,
-                    text: 'Student Progress'
+                    text: 'Participant Progress'
                 }
             }
         });
@@ -875,8 +875,8 @@ if (typeof window !== 'undefined') {
     window.ChartPerformanceMonitor = ChartPerformanceMonitor;
     
     // Factory functions
-    window.createStudentEngagementChart = createStudentEngagementChart;
-    window.createTeacherClassroomCharts = createTeacherClassroomCharts;
+    window.createParticipantEngagementChart = createParticipantEngagementChart;
+    window.createOperatorClassroomCharts = createOperatorClassroomCharts;
     
     // Global instances
     window.globalChartManager = globalChartManager;
@@ -896,7 +896,7 @@ if (typeof module !== 'undefined' && module.exports) {
         RealTimeChartUpdater,
         ChartThemeManager,
         ChartPerformanceMonitor,
-        createStudentEngagementChart,
-        createTeacherClassroomCharts
+        createParticipantEngagementChart,
+        createOperatorClassroomCharts
     };
 }

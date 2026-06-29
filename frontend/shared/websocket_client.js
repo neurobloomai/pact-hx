@@ -30,7 +30,7 @@ class PACTWebSocketClient {
         // Session data
         this.sessionId = null;
         this.userId = null;
-        this.userType = null; // 'student' or 'teacher'
+        this.userType = null; // 'participant' or 'operator'
         
         this.log('🔧 WebSocket client initialized');
     }
@@ -303,9 +303,9 @@ class PACTWebSocketClient {
     
     // High-level API Methods
     
-    // Student Methods
-    createStudentSession(studentData) {
-        return this.send('create_student_session', studentData);
+    // Participant Methods
+    createParticipantSession(participantData) {
+        return this.send('create_participant_session', participantData);
     }
     
     generateExperience(experienceData) {
@@ -320,17 +320,17 @@ class PACTWebSocketClient {
         return this.send('trigger_adaptation', adaptationData);
     }
     
-    // Teacher Methods
-    joinTeacherDashboard(classroomData) {
-        return this.send('join_teacher_dashboard', classroomData);
+    // Operator Methods
+    joinOperatorDashboard(classroomData) {
+        return this.send('join_operator_dashboard', classroomData);
     }
     
     broadcastToClassroom(message) {
         return this.send('classroom_broadcast', message);
     }
     
-    assistStudent(studentData) {
-        return this.send('assist_student', studentData);
+    assistParticipant(participantData) {
+        return this.send('assist_participant', participantData);
     }
     
     // Utility Methods
@@ -353,34 +353,34 @@ class PACTWebSocketClient {
 
 // Specialized WebSocket Clients
 
-class StudentWebSocketClient extends PACTWebSocketClient {
+class ParticipantWebSocketClient extends PACTWebSocketClient {
     constructor(endpoint, options = {}) {
-        super(endpoint, { ...options, userType: 'student' });
-        this.studentProfile = null;
+        super(endpoint, { ...options, userType: 'participant' });
+        this.participantProfile = null;
         this.currentExperience = null;
     }
     
-    setStudentProfile(profile) {
-        this.studentProfile = profile;
-        this.userId = profile.student_id;
+    setParticipantProfile(profile) {
+        this.participantProfile = profile;
+        this.userId = profile.participant_id;
         
         // Send profile to server
         if (this.isConnected) {
-            this.send('student_profile_update', profile);
+            this.send('participant_profile_update', profile);
         }
     }
     
     startLearningSession() {
-        if (!this.studentProfile) {
-            throw new Error('Student profile must be set before starting session');
+        if (!this.participantProfile) {
+            throw new Error('Participant profile must be set before starting session');
         }
         
-        return this.createStudentSession({
-            student_id: this.studentProfile.student_id,
-            name: this.studentProfile.name,
-            learning_style: this.studentProfile.learning_style,
-            grade_level: this.studentProfile.grade_level,
-            preferences: this.studentProfile.preferences
+        return this.createParticipantSession({
+            participant_id: this.participantProfile.participant_id,
+            name: this.participantProfile.name,
+            learning_style: this.participantProfile.learning_style,
+            grade_level: this.participantProfile.grade_level,
+            preferences: this.participantProfile.preferences
         });
     }
     
@@ -389,7 +389,7 @@ class StudentWebSocketClient extends PACTWebSocketClient {
             sessionId: this.sessionId,
             subject,
             topic,
-            preferences: this.studentProfile?.preferences
+            preferences: this.participantProfile?.preferences
         });
     }
     
@@ -401,35 +401,35 @@ class StudentWebSocketClient extends PACTWebSocketClient {
     }
 }
 
-class TeacherWebSocketClient extends PACTWebSocketClient {
+class OperatorWebSocketClient extends PACTWebSocketClient {
     constructor(endpoint, options = {}) {
-        super(endpoint, { ...options, userType: 'teacher' });
+        super(endpoint, { ...options, userType: 'operator' });
         this.classroomId = null;
-        this.students = new Map();
+        this.participants = new Map();
     }
     
-    joinClassroom(classroomId, teacherData = {}) {
+    joinClassroom(classroomId, operatorData = {}) {
         this.classroomId = classroomId;
-        this.userId = teacherData.teacher_id || 'teacher_default';
+        this.userId = operatorData.operator_id || 'operator_default';
         
-        return this.joinTeacherDashboard({
+        return this.joinOperatorDashboard({
             classroomId,
-            teacherId: this.userId,
-            ...teacherData
+            operatorId: this.userId,
+            ...operatorData
         });
     }
     
-    monitorStudent(studentId) {
-        // Request specific student updates
-        return this.send('monitor_student', {
-            studentId,
+    monitorParticipant(participantId) {
+        // Request specific participant updates
+        return this.send('monitor_participant', {
+            participantId,
             classroomId: this.classroomId
         });
     }
     
-    helpStudent(studentId, interventionType = 'general_assistance') {
-        return this.assistStudent({
-            studentId,
+    helpParticipant(participantId, interventionType = 'general_assistance') {
+        return this.assistParticipant({
+            participantId,
             classroomId: this.classroomId,
             interventionType,
             timestamp: new Date().toISOString()
@@ -448,12 +448,12 @@ class TeacherWebSocketClient extends PACTWebSocketClient {
 
 // Connection Factory
 class PACTWebSocketFactory {
-    static createStudentClient(endpoint, options = {}) {
-        return new StudentWebSocketClient(endpoint, options);
+    static createParticipantClient(endpoint, options = {}) {
+        return new ParticipantWebSocketClient(endpoint, options);
     }
     
-    static createTeacherClient(endpoint, options = {}) {
-        return new TeacherWebSocketClient(endpoint, options);
+    static createOperatorClient(endpoint, options = {}) {
+        return new OperatorWebSocketClient(endpoint, options);
     }
     
     static createGenericClient(endpoint, options = {}) {
@@ -477,11 +477,11 @@ class PACTConnectionManager {
         let client;
         
         switch (type) {
-            case 'student':
-                client = PACTWebSocketFactory.createStudentClient(wsEndpoint, options);
+            case 'participant':
+                client = PACTWebSocketFactory.createParticipantClient(wsEndpoint, options);
                 break;
-            case 'teacher':
-                client = PACTWebSocketFactory.createTeacherClient(wsEndpoint, options);
+            case 'operator':
+                client = PACTWebSocketFactory.createOperatorClient(wsEndpoint, options);
                 break;
             default:
                 client = PACTWebSocketFactory.createGenericClient(wsEndpoint, options);
@@ -509,36 +509,36 @@ class PACTConnectionManager {
 const pactConnectionManager = new PACTConnectionManager();
 
 // Convenience functions for common usage
-function connectAsStudent(studentProfile, endpoint = null, options = {}) {
+function connectAsParticipant(participantProfile, endpoint = null, options = {}) {
     const client = pactConnectionManager.getOrCreateClient(
-        studentProfile.student_id, 
-        'student', 
+        participantProfile.participant_id, 
+        'participant', 
         endpoint, 
         { ...options, debugMode: true }
     );
     
-    client.setStudentProfile(studentProfile);
+    client.setParticipantProfile(participantProfile);
     return client.connect({ 
-        sessionId: `session_${studentProfile.student_id}_${Date.now()}`,
-        userId: studentProfile.student_id,
-        userType: 'student'
+        sessionId: `session_${participantProfile.participant_id}_${Date.now()}`,
+        userId: participantProfile.participant_id,
+        userType: 'participant'
     }).then(() => client);
 }
 
-function connectAsTeacher(teacherData, classroomId, endpoint = null, options = {}) {
+function connectAsOperator(operatorData, classroomId, endpoint = null, options = {}) {
     const client = pactConnectionManager.getOrCreateClient(
-        teacherData.teacher_id || 'teacher_default', 
-        'teacher', 
+        operatorData.operator_id || 'operator_default', 
+        'operator', 
         endpoint, 
         { ...options, debugMode: true }
     );
     
     return client.connect({
-        sessionId: `teacher_${classroomId}_${Date.now()}`,
-        userId: teacherData.teacher_id,
-        userType: 'teacher'
+        sessionId: `operator_${classroomId}_${Date.now()}`,
+        userId: operatorData.operator_id,
+        userType: 'operator'
     }).then(() => {
-        return client.joinClassroom(classroomId, teacherData);
+        return client.joinClassroom(classroomId, operatorData);
     }).then(() => client);
 }
 
@@ -546,23 +546,23 @@ function connectAsTeacher(teacherData, classroomId, endpoint = null, options = {
 if (typeof window !== 'undefined') {
     // Browser environment
     window.PACTWebSocketClient = PACTWebSocketClient;
-    window.StudentWebSocketClient = StudentWebSocketClient;
-    window.TeacherWebSocketClient = TeacherWebSocketClient;
+    window.ParticipantWebSocketClient = ParticipantWebSocketClient;
+    window.OperatorWebSocketClient = OperatorWebSocketClient;
     window.PACTWebSocketFactory = PACTWebSocketFactory;
     window.pactConnectionManager = pactConnectionManager;
-    window.connectAsStudent = connectAsStudent;
-    window.connectAsTeacher = connectAsTeacher;
+    window.connectAsParticipant = connectAsParticipant;
+    window.connectAsOperator = connectAsOperator;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
     // Node.js environment
     module.exports = {
         PACTWebSocketClient,
-        StudentWebSocketClient,
-        TeacherWebSocketClient,
+        ParticipantWebSocketClient,
+        OperatorWebSocketClient,
         PACTWebSocketFactory,
         PACTConnectionManager,
-        connectAsStudent,
-        connectAsTeacher
+        connectAsParticipant,
+        connectAsOperator
     };
 }

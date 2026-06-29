@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PACT Teacher Dashboard</title>
+    <title>PACT Operator Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -98,7 +98,7 @@
             color: #e74c3c;
         }
         
-        .students-overview .overview-value {
+        .participants-overview .overview-value {
             color: #3498db;
         }
         
@@ -109,7 +109,7 @@
             margin-bottom: 20px;
         }
         
-        .student-grid-section {
+        .participant-grid-section {
             background: rgba(255, 255, 255, 0.95);
             border-radius: 12px;
             padding: 25px;
@@ -117,14 +117,14 @@
             backdrop-filter: blur(10px);
         }
         
-        .student-grid {
+        .participant-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 15px;
             margin-top: 20px;
         }
         
-        .student-card {
+        .participant-card {
             background: #f8f9fa;
             border-radius: 10px;
             padding: 20px;
@@ -134,7 +134,7 @@
             overflow: hidden;
         }
         
-        .student-card::before {
+        .participant-card::before {
             content: '';
             position: absolute;
             top: 0;
@@ -144,17 +144,17 @@
             background: linear-gradient(90deg, #e74c3c 0%, #f39c12 50%, #27ae60 100%);
         }
         
-        .student-card.high-engagement {
+        .participant-card.high-engagement {
             border-left-color: #27ae60;
             background: linear-gradient(135deg, #d5f4e6 0%, #fafafa 100%);
         }
         
-        .student-card.medium-engagement {
+        .participant-card.medium-engagement {
             border-left-color: #f39c12;
             background: linear-gradient(135deg, #fff3cd 0%, #fafafa 100%);
         }
         
-        .student-card.low-engagement {
+        .participant-card.low-engagement {
             border-left-color: #e74c3c;
             background: linear-gradient(135deg, #f8d7da 0%, #fafafa 100%);
             animation: attention 3s infinite;
@@ -165,24 +165,24 @@
             50% { transform: scale(1.02); }
         }
         
-        .student-header {
+        .participant-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
         }
         
-        .student-name {
+        .participant-name {
             font-weight: bold;
             font-size: 1.1em;
             color: #2c3e50;
         }
         
-        .student-status {
+        .participant-status {
             font-size: 1.5em;
         }
         
-        .student-metrics {
+        .participant-metrics {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
@@ -223,7 +223,7 @@
             border-radius: 4px;
         }
         
-        .student-actions {
+        .participant-actions {
             display: flex;
             gap: 8px;
             margin-top: 10px;
@@ -403,7 +403,7 @@
                 grid-template-columns: 1fr;
             }
             
-            .student-grid {
+            .participant-grid {
                 grid-template-columns: 1fr;
             }
         }
@@ -414,7 +414,7 @@
         <div class="header">
             <h1>
                 <span class="status-indicator"></span>
-                🎓 PACT Teacher Dashboard
+                🎓 PACT Operator Dashboard
             </h1>
             <p>Real-time classroom monitoring and adaptive learning insights</p>
             <div style="margin-top: 10px; color: #7f8c8d;">
@@ -433,17 +433,17 @@
                 <div class="overview-value" id="totalAdaptations">--</div>
                 <div class="overview-label">Total Adaptations</div>
             </div>
-            <div class="overview-card students-overview">
-                <div class="overview-value" id="activeStudents">--</div>
-                <div class="overview-label">Active Students</div>
+            <div class="overview-card participants-overview">
+                <div class="overview-value" id="activeParticipants">--</div>
+                <div class="overview-label">Active Participants</div>
             </div>
         </div>
         
         <div class="main-content">
-            <div class="student-grid-section">
-                <h2>👥 Student Status Monitor</h2>
-                <div class="student-grid" id="studentGrid">
-                    <!-- Students will be populated here -->
+            <div class="participant-grid-section">
+                <h2>👥 Participant Status Monitor</h2>
+                <div class="participant-grid" id="participantGrid">
+                    <!-- Participants will be populated here -->
                 </div>
             </div>
             
@@ -479,8 +479,8 @@
             <button class="control-btn success" onclick="celebrateAchievements()">
                 🎉 Celebrate Progress
             </button>
-            <button class="control-btn danger" onclick="assistStrugglingStudents()">
-                🆘 Assist Struggling Students
+            <button class="control-btn danger" onclick="assistStrugglingParticipants()">
+                🆘 Assist Struggling Participants
             </button>
         </div>
     </div>
@@ -499,9 +499,9 @@
         let lastUpdateTime = Date.now();
         
         // Sample data for demo purposes
-        let mockStudents = [
+        let mockParticipants = [
             {
-                student_id: 'student_001',
+                participant_id: 'participant_001',
                 name: 'Alex Chen',
                 learning_style: 'visual',
                 engagement_level: 0.85,
@@ -512,7 +512,7 @@
                 time_on_task: '12:34'
             },
             {
-                student_id: 'student_002', 
+                participant_id: 'participant_002', 
                 name: 'Maya Patel',
                 learning_style: 'kinesthetic',
                 engagement_level: 0.45,
@@ -523,7 +523,7 @@
                 time_on_task: '08:22'
             },
             {
-                student_id: 'student_003',
+                participant_id: 'participant_003',
                 name: 'Jordan Kim',
                 learning_style: 'auditory',
                 engagement_level: 0.92,
@@ -534,7 +534,7 @@
                 time_on_task: '15:41'
             },
             {
-                student_id: 'student_004',
+                participant_id: 'participant_004',
                 name: 'Emma Rodriguez',
                 learning_style: 'reading',
                 engagement_level: 0.67,
@@ -548,7 +548,7 @@
         
         // Initialize dashboard
         function initDashboard() {
-            console.log('🎓 Initializing PACT Teacher Dashboard...');
+            console.log('🎓 Initializing PACT Operator Dashboard...');
             
             // Setup WebSocket connection
             setupWebSocket();
@@ -581,20 +581,20 @@
             
             socket.on('adaptation_triggered', function(data) {
                 console.log('⚡ Adaptation triggered:', data);
-                addActivity('adaptation', `⚡ ${data.student_name || 'Student'} - Content Adapted`, 
+                addActivity('adaptation', `⚡ ${data.participant_name || 'Participant'} - Content Adapted`, 
                            data.adaptation?.reasoning || 'Learning experience modified');
-                updateStudentAdaptationCount(data.student_id);
+                updateParticipantAdaptationCount(data.participant_id);
             });
             
             socket.on('experience_generated', function(data) {
                 console.log('📚 New experience generated:', data);
                 addActivity('experience', `📚 New learning experience created`, 
-                           `Personalized content generated for student`);
+                           `Personalized content generated for participant`);
             });
             
-            socket.on('student_joined', function(data) {
-                console.log('👋 Student joined:', data);
-                addActivity('join', `👋 ${data.student_name} joined the classroom`, 
+            socket.on('participant_joined', function(data) {
+                console.log('👋 Participant joined:', data);
+                addActivity('join', `👋 ${data.participant_name} joined the classroom`, 
                            `Started learning session`);
             });
         }
@@ -643,86 +643,86 @@
             simulateRealtimeData();
             
             updateOverviewCards();
-            updateStudentGrid();
+            updateParticipantGrid();
             updateEngagementChart();
             updateInsights();
         }
         
         function simulateRealtimeData() {
             // Simulate realistic engagement fluctuations
-            mockStudents.forEach(student => {
+            mockParticipants.forEach(participant => {
                 const change = (Math.random() - 0.5) * 0.1;
-                student.engagement_level = Math.max(0.1, Math.min(0.95, student.engagement_level + change));
+                participant.engagement_level = Math.max(0.1, Math.min(0.95, participant.engagement_level + change));
                 
                 // Update status based on engagement
-                if (student.engagement_level > 0.8) {
-                    student.status = '🌟';
-                } else if (student.engagement_level > 0.6) {
-                    student.status = '😊';
-                } else if (student.engagement_level > 0.4) {
-                    student.status = '😐';
+                if (participant.engagement_level > 0.8) {
+                    participant.status = '🌟';
+                } else if (participant.engagement_level > 0.6) {
+                    participant.status = '😊';
+                } else if (participant.engagement_level > 0.4) {
+                    participant.status = '😐';
                 } else {
-                    student.status = '😰';
+                    participant.status = '😰';
                 }
                 
                 // Occasionally trigger adaptations for low engagement
-                if (student.engagement_level < 0.3 && Math.random() < 0.1) {
-                    student.adaptation_count++;
-                    addActivity('adaptation', `⚡ ${student.name} - Engagement Boost`, 
-                               'Added interactive elements to re-engage student');
-                    student.engagement_level = Math.min(0.9, student.engagement_level + 0.3);
+                if (participant.engagement_level < 0.3 && Math.random() < 0.1) {
+                    participant.adaptation_count++;
+                    addActivity('adaptation', `⚡ ${participant.name} - Engagement Boost`, 
+                               'Added interactive elements to re-engage participant');
+                    participant.engagement_level = Math.min(0.9, participant.engagement_level + 0.3);
                 }
             });
         }
         
         function updateOverviewCards() {
-            const avgEngagement = mockStudents.reduce((sum, s) => sum + s.engagement_level, 0) / mockStudents.length;
-            const totalAdaptations = mockStudents.reduce((sum, s) => sum + s.adaptation_count, 0);
+            const avgEngagement = mockParticipants.reduce((sum, s) => sum + s.engagement_level, 0) / mockParticipants.length;
+            const totalAdaptations = mockParticipants.reduce((sum, s) => sum + s.adaptation_count, 0);
             
             document.getElementById('avgEngagement').textContent = Math.round(avgEngagement * 100) + '%';
             document.getElementById('totalAdaptations').textContent = totalAdaptations;
-            document.getElementById('activeStudents').textContent = mockStudents.length;
+            document.getElementById('activeParticipants').textContent = mockParticipants.length;
         }
         
-        function updateStudentGrid() {
-            const grid = document.getElementById('studentGrid');
+        function updateParticipantGrid() {
+            const grid = document.getElementById('participantGrid');
             
-            grid.innerHTML = mockStudents.map(student => {
-                const engagementClass = student.engagement_level > 0.7 ? 'high-engagement' :
-                                      student.engagement_level > 0.5 ? 'medium-engagement' : 'low-engagement';
+            grid.innerHTML = mockParticipants.map(participant => {
+                const engagementClass = participant.engagement_level > 0.7 ? 'high-engagement' :
+                                      participant.engagement_level > 0.5 ? 'medium-engagement' : 'low-engagement';
                 
                 return `
-                    <div class="student-card ${engagementClass}">
-                        <div class="student-header">
-                            <div class="student-name">${student.name}</div>
-                            <div class="student-status">${student.status}</div>
+                    <div class="participant-card ${engagementClass}">
+                        <div class="participant-header">
+                            <div class="participant-name">${participant.name}</div>
+                            <div class="participant-status">${participant.status}</div>
                         </div>
                         
-                        <div class="student-metrics">
+                        <div class="participant-metrics">
                             <div class="metric">
-                                <div class="metric-value">${Math.round(student.engagement_level * 100)}%</div>
+                                <div class="metric-value">${Math.round(participant.engagement_level * 100)}%</div>
                                 <div class="metric-label">Engagement</div>
                             </div>
                             <div class="metric">
-                                <div class="metric-value">${student.adaptation_count}</div>
+                                <div class="metric-value">${participant.adaptation_count}</div>
                                 <div class="metric-label">Adaptations</div>
                             </div>
                         </div>
                         
                         <div class="engagement-bar">
-                            <div class="engagement-fill" style="width: ${student.engagement_level * 100}%"></div>
+                            <div class="engagement-fill" style="width: ${participant.engagement_level * 100}%"></div>
                         </div>
                         
                         <div style="font-size: 0.9em; color: #7f8c8d; margin: 8px 0;">
-                            <strong>Activity:</strong> ${student.current_activity}<br>
-                            <strong>Time:</strong> ${student.time_on_task} | <strong>Style:</strong> ${student.learning_style}
+                            <strong>Activity:</strong> ${participant.current_activity}<br>
+                            <strong>Time:</strong> ${participant.time_on_task} | <strong>Style:</strong> ${participant.learning_style}
                         </div>
                         
-                        <div class="student-actions">
-                            <button class="action-btn view" onclick="viewStudentDetails('${student.student_id}')">
+                        <div class="participant-actions">
+                            <button class="action-btn view" onclick="viewParticipantDetails('${participant.participant_id}')">
                                 👀 View
                             </button>
-                            <button class="action-btn assist" onclick="assistStudent('${student.student_id}')">
+                            <button class="action-btn assist" onclick="assistParticipant('${participant.participant_id}')">
                                 🆘 Assist
                             </button>
                         </div>
@@ -734,7 +734,7 @@
         function updateEngagementChart() {
             const now = new Date();
             const timeLabel = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            const avgEngagement = mockStudents.reduce((sum, s) => sum + s.engagement_level, 0) / mockStudents.length;
+            const avgEngagement = mockParticipants.reduce((sum, s) => sum + s.engagement_level, 0) / mockParticipants.length;
             
             engagementChart.data.labels.push(timeLabel);
             engagementChart.data.datasets[0].data.push(avgEngagement);
@@ -749,9 +749,9 @@
         }
         
         function updateInsights() {
-            const avgEngagement = mockStudents.reduce((sum, s) => sum + s.engagement_level, 0) / mockStudents.length;
-            const strugglingStudents = mockStudents.filter(s => s.engagement_level < 0.5).length;
-            const excellingStudents = mockStudents.filter(s => s.engagement_level > 0.8).length;
+            const avgEngagement = mockParticipants.reduce((sum, s) => sum + s.engagement_level, 0) / mockParticipants.length;
+            const strugglingParticipants = mockParticipants.filter(s => s.engagement_level < 0.5).length;
+            const excellingParticipants = mockParticipants.filter(s => s.engagement_level > 0.8).length;
             
             const insights = document.getElementById('insightsPanel');
             
@@ -763,12 +763,12 @@
                 insightHtml += '<div style="color: #e74c3c;">⚠️ Class engagement below target - consider intervention</div>';
             }
             
-            if (strugglingStudents > 0) {
-                insightHtml += `<div style="color: #f39c12;">👥 ${strugglingStudents} student(s) may need additional support</div>`;
+            if (strugglingParticipants > 0) {
+                insightHtml += `<div style="color: #f39c12;">👥 ${strugglingParticipants} participant(s) may need additional support</div>`;
             }
             
-            if (excellingStudents > 0) {
-                insightHtml += `<div style="color: #27ae60;">🌟 ${excellingStudents} student(s) ready for advanced challenges</div>`;
+            if (excellingParticipants > 0) {
+                insightHtml += `<div style="color: #27ae60;">🌟 ${excellingParticipants} participant(s) ready for advanced challenges</div>`;
             }
             
             insightHtml += '</div>';
@@ -811,71 +811,71 @@
             }
         }
         
-        function updateStudentAdaptationCount(studentId) {
-            const student = mockStudents.find(s => s.student_id === studentId);
-            if (student) {
-                student.adaptation_count++;
+        function updateParticipantAdaptationCount(participantId) {
+            const participant = mockParticipants.find(s => s.participant_id === participantId);
+            if (participant) {
+                participant.adaptation_count++;
             }
         }
         
         // Classroom control functions
         function triggerClassroomBoost() {
             addActivity('boost', '🚀 Classroom Engagement Boost Activated', 
-                       'Triggered interactive activities for all students');
-            showNotification('Engagement boost sent to all students!', 'success');
+                       'Triggered interactive activities for all participants');
+            showNotification('Engagement boost sent to all participants!', 'success');
             
             // Simulate boost effect
-            mockStudents.forEach(student => {
-                student.engagement_level = Math.min(0.95, student.engagement_level + 0.2);
+            mockParticipants.forEach(participant => {
+                participant.engagement_level = Math.min(0.95, participant.engagement_level + 0.2);
             });
         }
         
         function celebrateAchievements() {
             addActivity('achievement', '🎉 Classroom Celebration Triggered', 
-                       'Highlighted student achievements and progress');
-            showNotification('Celebrating student achievements!', 'success');
+                       'Highlighted participant achievements and progress');
+            showNotification('Celebrating participant achievements!', 'success');
         }
         
-        function assistStrugglingStudents() {
-            const strugglingStudents = mockStudents.filter(s => s.engagement_level < 0.5);
+        function assistStrugglingParticipants() {
+            const strugglingParticipants = mockParticipants.filter(s => s.engagement_level < 0.5);
             
-            if (strugglingStudents.length > 0) {
-                addActivity('assist', `🆘 Assistance Sent to ${strugglingStudents.length} Students`,
+            if (strugglingParticipants.length > 0) {
+                addActivity('assist', `🆘 Assistance Sent to ${strugglingParticipants.length} Participants`,
                            'Provided additional support and simplified content');
-                showNotification(`Assistance sent to ${strugglingStudents.length} struggling students`, 'success');
+                showNotification(`Assistance sent to ${strugglingParticipants.length} struggling participants`, 'success');
                 
                 // Simulate assistance effect
-                strugglingStudents.forEach(student => {
-                    student.engagement_level = Math.min(0.8, student.engagement_level + 0.3);
-                    student.adaptation_count++;
+                strugglingParticipants.forEach(participant => {
+                    participant.engagement_level = Math.min(0.8, participant.engagement_level + 0.3);
+                    participant.adaptation_count++;
                 });
             } else {
-                showNotification('All students are doing well!', 'success');
+                showNotification('All participants are doing well!', 'success');
             }
         }
         
-        function viewStudentDetails(studentId) {
-            const student = mockStudents.find(s => s.student_id === studentId);
-            if (student) {
-                addActivity('view', `👀 Viewing ${student.name}'s Details`, 
-                           'Opened detailed student progress view');
-                showNotification(`Viewing details for ${student.name}`, 'info');
+        function viewParticipantDetails(participantId) {
+            const participant = mockParticipants.find(s => s.participant_id === participantId);
+            if (participant) {
+                addActivity('view', `👀 Viewing ${participant.name}'s Details`, 
+                           'Opened detailed participant progress view');
+                showNotification(`Viewing details for ${participant.name}`, 'info');
                 
-                // In a real implementation, this would open a detailed modal or navigate to student view
-                console.log('Student details:', student);
+                // In a real implementation, this would open a detailed modal or navigate to participant view
+                console.log('Participant details:', participant);
             }
         }
         
-        function assistStudent(studentId) {
-            const student = mockStudents.find(s => s.student_id === studentId);
-            if (student) {
-                addActivity('assist', `🆘 Individual Assistance - ${student.name}`, 
+        function assistParticipant(participantId) {
+            const participant = mockParticipants.find(s => s.participant_id === participantId);
+            if (participant) {
+                addActivity('assist', `🆘 Individual Assistance - ${participant.name}`, 
                            'Provided personalized learning support');
-                showNotification(`Assistance sent to ${student.name}`, 'success');
+                showNotification(`Assistance sent to ${participant.name}`, 'success');
                 
                 // Simulate assistance effect
-                student.engagement_level = Math.min(0.9, student.engagement_level + 0.25);
-                student.adaptation_count++;
+                participant.engagement_level = Math.min(0.9, participant.engagement_level + 0.25);
+                participant.adaptation_count++;
             }
         }
         
@@ -898,11 +898,11 @@
         
         // Initialize dashboard when page loads
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🎓 PACT Teacher Dashboard Loading...');
+            console.log('🎓 PACT Operator Dashboard Loading...');
             initDashboard();
             
             // Add initial activity
-            addActivity('connection', '🎓 Teacher Dashboard Initialized', 
+            addActivity('connection', '🎓 Operator Dashboard Initialized', 
                        'Connected to PACT classroom monitoring system');
         });
         
@@ -926,7 +926,7 @@
                         break;
                     case '2':
                         e.preventDefault();
-                        assistStrugglingStudents();
+                        assistStrugglingParticipants();
                         break;
                     case '3':
                         e.preventDefault();

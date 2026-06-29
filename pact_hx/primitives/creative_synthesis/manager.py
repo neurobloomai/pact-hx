@@ -9,7 +9,7 @@ relatable stories, and passive learning into active exploration.
 
 Educational Transformation Mission:
 Every concept can spark wonder. Every lesson can become an adventure. 
-Every student can find their path to understanding through creativity.
+Every participant can find their path to understanding through creativity.
 
 The Creative Synthesis Engine believes that when learning engages the imagination, 
 it becomes unforgettable.
@@ -33,15 +33,15 @@ Creativity isn't decoration - it's illumination. Every creative element serves l
 - Surprises keep minds open and engaged
 
 The Creative Process:
-1. Understand the Learning Goal (What must students achieve?)
-2. Know the Student (Who are we creating for?)
+1. Understand the Learning Goal (What must participants achieve?)
+2. Know the Participant (Who are we creating for?)
 3. Find the Creative Hook (What will capture their imagination?)
 4. Design the Experience (How will creativity serve learning?)
 5. Test and Iterate (How can we make it even better?)
 
 Integration with PACT Ecosystem:
 - Receives learning objectives from Goal Primitive
-- Gets student context from Empathetic Interaction
+- Gets participant context from Empathetic Interaction
 - Collaborates with Adaptive Reasoning for pedagogical soundness
 - Works with Contextual Memory for personalization
 - Reports to System Evolution for continuous improvement
@@ -110,8 +110,8 @@ class LearningExperience:
 
 
 @dataclass
-class StudentCreativeProfile:
-    """Student's creative preferences and response patterns"""
+class ParticipantCreativeProfile:
+    """Participant's creative preferences and response patterns"""
     preferred_modalities: List[CreativeModality]
     learning_styles: List[LearningStyle]
     engagement_history: Dict[str, float]
@@ -125,7 +125,7 @@ class StudentCreativeProfile:
 class CreativeSynthesisManager:
     """
     The heart of educational creativity - transforms learning objectives
-    into magical, memorable experiences that ignite student imagination
+    into magical, memorable experiences that ignite participant imagination
     while ensuring deep learning occurs.
     """
     
@@ -138,7 +138,7 @@ class CreativeSynthesisManager:
         
         # Learning effectiveness tracking
         self.experience_effectiveness = {}
-        self.student_response_patterns = {}
+        self.participant_response_patterns = {}
         
         # Integration points with other PACT primitives
         self.goal_primitive = None
@@ -153,7 +153,7 @@ class CreativeSynthesisManager:
             "story_structures": [
                 {
                     "name": "Hero's Journey Learning",
-                    "template": "student_as_hero",
+                    "template": "participant_as_hero",
                     "phases": ["call_to_adventure", "mentorship", "challenges", "revelation", "return"],
                     "best_for": ["complex_concepts", "skill_development", "character_building"]
                 },
@@ -289,29 +289,29 @@ class CreativeSynthesisManager:
             ],
             "interactive_reveals": [
                 "Hidden information revealed through action",
-                "Concepts that emerge from student discovery",
-                "Surprising outcomes from student choices"
+                "Concepts that emerge from participant discovery",
+                "Surprising outcomes from participant choices"
             ]
         }
     
     async def create_learning_experience(
         self,
         learning_objective: str,
-        student_profile: StudentCreativeProfile,
+        participant_profile: ParticipantCreativeProfile,
         subject_context: Dict[str, Any],
         constraints: Optional[Dict[str, Any]] = None
     ) -> LearningExperience:
         """
         Create a comprehensive creative learning experience tailored
-        to the student and objective.
+        to the participant and objective.
         """
         logger.info(f"Creating creative learning experience for: {learning_objective}")
         
         # Step 1: Understand the Learning Goal
         learning_analysis = await self._analyze_learning_objective(learning_objective, subject_context)
         
-        # Step 2: Know the Student
-        creative_preferences = await self._analyze_student_creativity(student_profile)
+        # Step 2: Know the Participant
+        creative_preferences = await self._analyze_participant_creativity(participant_profile)
         
         # Step 3: Find the Creative Hook
         creative_hooks = await self._generate_creative_hooks(
@@ -320,11 +320,11 @@ class CreativeSynthesisManager:
         
         # Step 4: Design the Experience
         experience = await self._design_complete_experience(
-            learning_objective, creative_hooks, student_profile, learning_analysis
+            learning_objective, creative_hooks, participant_profile, learning_analysis
         )
         
         # Step 5: Add Surprise Elements
-        experience = await self._add_surprise_elements(experience, student_profile)
+        experience = await self._add_surprise_elements(experience, participant_profile)
         
         return experience
     
@@ -377,11 +377,11 @@ class CreativeSynthesisManager:
         
         return list(set(content_words[:5]))  # Top 5 unique concepts
     
-    async def _analyze_student_creativity(
+    async def _analyze_participant_creativity(
         self, 
-        profile: StudentCreativeProfile
+        profile: ParticipantCreativeProfile
     ) -> Dict[str, Any]:
-        """Analyze student's creative preferences and optimal engagement strategies"""
+        """Analyze participant's creative preferences and optimal engagement strategies"""
         
         primary_modalities = profile.preferred_modalities[:3]
         learning_style_weights = {style.value: 1.0 for style in profile.learning_styles}
@@ -469,9 +469,9 @@ class CreativeSynthesisManager:
         
         # Create story narrative
         story_title = f"The Quest for {main_concept.title()}"
-        story_desc = f"Students embark on a {selected_structure['name'].lower()} where they must master {main_concept} to overcome challenges and help others."
+        story_desc = f"Participants embark on a {selected_structure['name'].lower()} where they must master {main_concept} to overcome challenges and help others."
         
-        # Connect to student interests
+        # Connect to participant interests
         if preferences['interest_hooks']:
             interest = random.choice(preferences['interest_hooks'])
             story_desc += f" The adventure takes place in a world of {interest}."
@@ -681,7 +681,7 @@ class CreativeSynthesisManager:
         self,
         objective: str,
         hooks: List[CreativeHook],
-        student_profile: StudentCreativeProfile,
+        participant_profile: ParticipantCreativeProfile,
         learning_analysis: Dict[str, Any]
     ) -> LearningExperience:
         """Design the complete learning experience integrating all elements"""
@@ -696,16 +696,16 @@ class CreativeSynthesisManager:
         narrative = await self._create_narrative_thread(primary_hook, learning_analysis)
         
         # Design activities
-        activities = await self._design_activities(hooks, learning_analysis, student_profile)
+        activities = await self._design_activities(hooks, learning_analysis, participant_profile)
         
         # Create assessment integration
-        assessment = await self._design_creative_assessment(objective, hooks, student_profile)
+        assessment = await self._design_creative_assessment(objective, hooks, participant_profile)
         
         # Generate personalization notes
-        personalization = await self._create_personalization_notes(student_profile, hooks)
+        personalization = await self._create_personalization_notes(participant_profile, hooks)
         
         # Design multi-sensory components
-        multi_sensory = await self._design_multi_sensory_components(hooks, student_profile)
+        multi_sensory = await self._design_multi_sensory_components(hooks, participant_profile)
         
         return LearningExperience(
             title=primary_hook.title,
@@ -733,7 +733,7 @@ class CreativeSynthesisManager:
             return f"Our learning journey follows heroes who must master {main_concept} to overcome challenges and help their community. Each lesson reveals new powers and deeper understanding."
         
         elif primary_hook.type == CreativeModality.GAME:
-            return f"Welcome to the {main_concept} Academy, where students progress through levels of mastery, unlocking new abilities and taking on greater challenges."
+            return f"Welcome to the {main_concept} Academy, where participants progress through levels of mastery, unlocking new abilities and taking on greater challenges."
         
         elif primary_hook.type == CreativeModality.EXPERIENCE:
             return f"Step into the world where {main_concept} comes alive through hands-on discovery, real-world application, and tangible experimentation."
@@ -745,7 +745,7 @@ class CreativeSynthesisManager:
         self,
         hooks: List[CreativeHook],
         learning_analysis: Dict[str, Any],
-        student_profile: StudentCreativeProfile
+        participant_profile: ParticipantCreativeProfile
     ) -> List[Dict[str, Any]]:
         """Design specific activities for each creative hook"""
         
@@ -760,7 +760,7 @@ class CreativeSynthesisManager:
                 'materials': hook.materials_needed,
                 'instructions': await self._generate_activity_instructions(hook, learning_analysis),
                 'learning_outcomes': await self._define_learning_outcomes(hook, learning_analysis),
-                'adaptation_notes': await self._create_adaptation_notes(hook, student_profile)
+                'adaptation_notes': await self._create_adaptation_notes(hook, participant_profile)
             }
             activities.append(activity)
         
@@ -780,8 +780,8 @@ class CreativeSynthesisManager:
             return [
                 f"1. Introduce the story world and characters",
                 f"2. Present the challenge related to {main_concept}",
-                f"3. Guide students through the learning journey",
-                f"4. Have students apply {main_concept} to overcome obstacles",
+                f"3. Guide participants through the learning journey",
+                f"4. Have participants apply {main_concept} to overcome obstacles",
                 f"5. Celebrate the victory and reflect on learning"
             ]
         
@@ -790,7 +790,7 @@ class CreativeSynthesisManager:
                 f"1. Explain the game rules and objectives",
                 f"2. Demonstrate how {main_concept} knowledge helps in the game",
                 f"3. Start with easier challenges to build confidence",
-                f"4. Increase difficulty as students master skills",
+                f"4. Increase difficulty as participants master skills",
                 f"5. Debrief on strategies and learning insights"
             ]
         
@@ -826,66 +826,66 @@ class CreativeSynthesisManager:
         
         # Base outcomes for all activities
         if concepts:
-            outcomes.append(f"Students will demonstrate understanding of {concepts[0]}")
+            outcomes.append(f"Participants will demonstrate understanding of {concepts[0]}")
         
         # Type-specific outcomes
         if 'conceptual' in learning_types:
-            outcomes.append("Students will explain key concepts in their own words")
+            outcomes.append("Participants will explain key concepts in their own words")
         
         if 'procedural' in learning_types:
-            outcomes.append("Students will apply learned procedures to solve new problems")
+            outcomes.append("Participants will apply learned procedures to solve new problems")
         
         if 'creative' in learning_types:
-            outcomes.append("Students will create original solutions or expressions")
+            outcomes.append("Participants will create original solutions or expressions")
         
         if 'critical_thinking' in learning_types:
-            outcomes.append("Students will analyze and evaluate different approaches")
+            outcomes.append("Participants will analyze and evaluate different approaches")
         
         # Hook-specific outcomes
         if hook.type == CreativeModality.STORY:
-            outcomes.append("Students will connect learning to narrative elements")
+            outcomes.append("Participants will connect learning to narrative elements")
         elif hook.type == CreativeModality.GAME:
-            outcomes.append("Students will demonstrate strategic thinking and problem-solving")
+            outcomes.append("Participants will demonstrate strategic thinking and problem-solving")
         elif hook.type == CreativeModality.VISUAL:
-            outcomes.append("Students will communicate ideas through visual representation")
+            outcomes.append("Participants will communicate ideas through visual representation")
         elif hook.type == CreativeModality.EXPERIENCE:
-            outcomes.append("Students will make tangible connections between theory and practice")
+            outcomes.append("Participants will make tangible connections between theory and practice")
         
         return outcomes
     
     async def _create_adaptation_notes(
         self,
         hook: CreativeHook,
-        student_profile: StudentCreativeProfile
+        participant_profile: ParticipantCreativeProfile
     ) -> List[str]:
-        """Create notes for adapting the activity to student needs"""
+        """Create notes for adapting the activity to participant needs"""
         
         adaptations = []
         
         # Learning style adaptations
-        if LearningStyle.VISUAL in student_profile.learning_styles:
+        if LearningStyle.VISUAL in participant_profile.learning_styles:
             adaptations.append("Include visual aids, diagrams, and color coding")
         
-        if LearningStyle.AUDITORY in student_profile.learning_styles:
+        if LearningStyle.AUDITORY in participant_profile.learning_styles:
             adaptations.append("Incorporate discussions, explanations, and audio elements")
         
-        if LearningStyle.KINESTHETIC in student_profile.learning_styles:
+        if LearningStyle.KINESTHETIC in participant_profile.learning_styles:
             adaptations.append("Add movement, hands-on manipulation, and physical activity")
         
-        if LearningStyle.SOCIAL in student_profile.learning_styles:
+        if LearningStyle.SOCIAL in participant_profile.learning_styles:
             adaptations.append("Include group work, peer collaboration, and shared reflection")
         
-        if LearningStyle.SOLITARY in student_profile.learning_styles:
+        if LearningStyle.SOLITARY in participant_profile.learning_styles:
             adaptations.append("Provide individual reflection time and personal goal setting")
         
         # Attention span adaptations
-        if student_profile.attention_span < 20:
+        if participant_profile.attention_span < 20:
             adaptations.append("Break into shorter segments with frequent check-ins")
-        elif student_profile.attention_span > 45:
+        elif participant_profile.attention_span > 45:
             adaptations.append("Allow for deeper exploration and extended investigation")
         
         # Interest-based adaptations
-        for interest in student_profile.interest_themes:
+        for interest in participant_profile.interest_themes:
             adaptations.append(f"Connect concepts to {interest} when possible")
         
         return adaptations
@@ -894,7 +894,7 @@ class CreativeSynthesisManager:
         self,
         objective: str,
         hooks: List[CreativeHook],
-        student_profile: StudentCreativeProfile
+        participant_profile: ParticipantCreativeProfile
     ) -> Dict[str, Any]:
         """Design assessment that integrates creativity with learning evaluation"""
         
@@ -929,7 +929,7 @@ class CreativeSynthesisManager:
         # Self-assessment and reflection
         assessment_methods.append({
             'type': 'reflective_assessment',
-            'description': 'Student self-evaluation of learning and growth',
+            'description': 'Participant self-evaluation of learning and growth',
             'components': [
                 'learning_goal_progress',
                 'creative_process_reflection',
@@ -942,12 +942,12 @@ class CreativeSynthesisManager:
             'methods': assessment_methods,
             'rubric_focus': 'creativity_and_understanding',
             'feedback_approach': 'growth_oriented',
-            'student_choice_elements': ['presentation_format', 'expression_medium', 'collaboration_level']
+            'participant_choice_elements': ['presentation_format', 'expression_medium', 'collaboration_level']
         }
     
     async def _create_personalization_notes(
         self,
-        student_profile: StudentCreativeProfile,
+        participant_profile: ParticipantCreativeProfile,
         hooks: List[CreativeHook]
     ) -> List[str]:
         """Create personalization notes for the complete experience"""
@@ -955,31 +955,31 @@ class CreativeSynthesisManager:
         notes = []
         
         # Engagement history insights
-        if student_profile.engagement_history:
-            avg_engagement = sum(student_profile.engagement_history.values()) / len(student_profile.engagement_history)
+        if participant_profile.engagement_history:
+            avg_engagement = sum(participant_profile.engagement_history.values()) / len(participant_profile.engagement_history)
             if avg_engagement > 0.8:
-                notes.append("Student shows high engagement - provide advanced challenges and leadership opportunities")
+                notes.append("Participant shows high engagement - provide advanced challenges and leadership opportunities")
             elif avg_engagement < 0.4:
-                notes.append("Student needs additional motivation - focus on success experiences and interest connections")
+                notes.append("Participant needs additional motivation - focus on success experiences and interest connections")
         
         # Creative strengths leverage
-        for strength in student_profile.creative_strengths:
-            notes.append(f"Leverage student's strength in {strength} as an entry point for learning")
+        for strength in participant_profile.creative_strengths:
+            notes.append(f"Leverage participant's strength in {strength} as an entry point for learning")
         
         # Challenge area support
-        for challenge in student_profile.challenge_areas:
+        for challenge in participant_profile.challenge_areas:
             notes.append(f"Provide additional support and scaffolding for {challenge}")
         
         # Collaboration preferences
-        if student_profile.collaboration_preference == "individual":
+        if participant_profile.collaboration_preference == "individual":
             notes.append("Respect need for individual work time while providing optional collaboration")
-        elif student_profile.collaboration_preference == "small_group":
-            notes.append("Design activities for 2-4 student groups with clear roles")
-        elif student_profile.collaboration_preference == "large_group":
+        elif participant_profile.collaboration_preference == "small_group":
+            notes.append("Design activities for 2-4 participant groups with clear roles")
+        elif participant_profile.collaboration_preference == "large_group":
             notes.append("Include whole-class activities and community building elements")
         
         # Modality preferences
-        preferred_modalities = [m.value for m in student_profile.preferred_modalities]
+        preferred_modalities = [m.value for m in participant_profile.preferred_modalities]
         notes.append(f"Emphasize {', '.join(preferred_modalities)} approaches for optimal engagement")
         
         return notes
@@ -987,7 +987,7 @@ class CreativeSynthesisManager:
     async def _design_multi_sensory_components(
         self,
         hooks: List[CreativeHook],
-        student_profile: StudentCreativeProfile
+        participant_profile: ParticipantCreativeProfile
     ) -> Dict[str, Any]:
         """Design components that engage multiple senses"""
         
@@ -1004,7 +1004,7 @@ class CreativeSynthesisManager:
             'color_coded_materials',
             'visual_progress_tracking',
             'infographic_summaries',
-            'student_created_visuals'
+            'participant_created_visuals'
         ])
         
         # Auditory components
@@ -1044,7 +1044,7 @@ class CreativeSynthesisManager:
     async def _add_surprise_elements(
         self,
         experience: LearningExperience,
-        student_profile: StudentCreativeProfile
+        participant_profile: ParticipantCreativeProfile
     ) -> LearningExperience:
         """Add surprise elements to spark curiosity and delight"""
         
@@ -1052,17 +1052,17 @@ class CreativeSynthesisManager:
         
         # Unexpected connections
         surprises.append("Reveal surprising real-world applications of the concepts")
-        surprises.append("Show connections to student's personal interests")
+        surprises.append("Show connections to participant's personal interests")
         surprises.append("Introduce guest expert or unusual perspective")
         
         # Interactive reveals
-        surprises.append("Hidden information unlocked through student discovery")
+        surprises.append("Hidden information unlocked through participant discovery")
         surprises.append("Unexpected twist in the narrative or challenge")
-        surprises.append("Student choice that changes the learning path")
+        surprises.append("Participant choice that changes the learning path")
         
         # Perspective shifts
         surprises.append("View the concept from an unusual angle or scale")
-        surprises.append("Role reversal where students become the teachers")
+        surprises.append("Role reversal where participants become the operators")
         surprises.append("Time-shift perspective (past, future, or different era)")
         
         # Select 2-3 surprises that fit the experience
@@ -1074,7 +1074,7 @@ class CreativeSynthesisManager:
     async def evaluate_experience_effectiveness(
         self,
         experience_id: str,
-        student_responses: Dict[str, Any],
+        participant_responses: Dict[str, Any],
         learning_outcomes: Dict[str, Any]
     ) -> Dict[str, float]:
         """Evaluate how effective the creative experience was"""
@@ -1084,20 +1084,20 @@ class CreativeSynthesisManager:
             'learning_achievement': 0.0,
             'creative_expression': 0.0,
             'retention_prediction': 0.0,
-            'student_satisfaction': 0.0
+            'participant_satisfaction': 0.0
         }
         
         # Analyze engagement
-        if 'engagement_scores' in student_responses:
-            effectiveness_metrics['engagement_level'] = sum(student_responses['engagement_scores']) / len(student_responses['engagement_scores'])
+        if 'engagement_scores' in participant_responses:
+            effectiveness_metrics['engagement_level'] = sum(participant_responses['engagement_scores']) / len(participant_responses['engagement_scores'])
         
         # Analyze learning achievement
         if 'assessment_results' in learning_outcomes:
             effectiveness_metrics['learning_achievement'] = learning_outcomes['assessment_results'].get('average_score', 0.0)
         
         # Analyze creative expression
-        if 'creativity_ratings' in student_responses:
-            effectiveness_metrics['creative_expression'] = sum(student_responses['creativity_ratings']) / len(student_responses['creativity_ratings'])
+        if 'creativity_ratings' in participant_responses:
+            effectiveness_metrics['creative_expression'] = sum(participant_responses['creativity_ratings']) / len(participant_responses['creativity_ratings'])
         
         # Predict retention based on engagement and creativity
         effectiveness_metrics['retention_prediction'] = (
@@ -1106,9 +1106,9 @@ class CreativeSynthesisManager:
             effectiveness_metrics['learning_achievement'] * 0.3
         )
         
-        # Student satisfaction
-        if 'satisfaction_survey' in student_responses:
-            effectiveness_metrics['student_satisfaction'] = student_responses['satisfaction_survey'].get('overall_rating', 0.0)
+        # Participant satisfaction
+        if 'satisfaction_survey' in participant_responses:
+            effectiveness_metrics['participant_satisfaction'] = participant_responses['satisfaction_survey'].get('overall_rating', 0.0)
         
         # Store for future improvements
         self.experience_effectiveness[experience_id] = effectiveness_metrics
@@ -1117,33 +1117,33 @@ class CreativeSynthesisManager:
     
     async def refine_creative_approach(
         self,
-        student_id: str,
+        participant_id: str,
         experience_effectiveness: Dict[str, float],
-        student_feedback: Dict[str, Any]
+        participant_feedback: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Refine future creative approaches based on effectiveness and feedback"""
         
-        # Update student creative profile
-        if student_id not in self.student_response_patterns:
-            self.student_response_patterns[student_id] = {
+        # Update participant creative profile
+        if participant_id not in self.participant_response_patterns:
+            self.participant_response_patterns[participant_id] = {
                 'effective_modalities': {},
                 'preference_trends': {},
                 'engagement_patterns': {},
                 'learning_style_effectiveness': {}
             }
         
-        patterns = self.student_response_patterns[student_id]
+        patterns = self.participant_response_patterns[participant_id]
         
         # Track modality effectiveness
-        if 'preferred_modality' in student_feedback:
-            modality = student_feedback['preferred_modality']
+        if 'preferred_modality' in participant_feedback:
+            modality = participant_feedback['preferred_modality']
             if modality not in patterns['effective_modalities']:
                 patterns['effective_modalities'][modality] = []
             patterns['effective_modalities'][modality].append(experience_effectiveness['engagement_level'])
         
         # Track preference trends
-        if 'activity_preferences' in student_feedback:
-            for activity, rating in student_feedback['activity_preferences'].items():
+        if 'activity_preferences' in participant_feedback:
+            for activity, rating in participant_feedback['activity_preferences'].items():
                 if activity not in patterns['preference_trends']:
                     patterns['preference_trends'][activity] = []
                 patterns['preference_trends'][activity].append(rating)
@@ -1174,24 +1174,24 @@ class CreativeSynthesisManager:
             recommendations['adjust_complexity'] = 'increase'
         
         # Element adjustments
-        if 'most_engaging_elements' in student_feedback:
-            recommendations['increase_elements'] = student_feedback['most_engaging_elements']
+        if 'most_engaging_elements' in participant_feedback:
+            recommendations['increase_elements'] = participant_feedback['most_engaging_elements']
         
-        if 'least_engaging_elements' in student_feedback:
-            recommendations['avoid_approaches'] = student_feedback['least_engaging_elements']
+        if 'least_engaging_elements' in participant_feedback:
+            recommendations['avoid_approaches'] = participant_feedback['least_engaging_elements']
         
         return recommendations
     
     async def generate_creativity_report(
         self,
         time_period: str,
-        student_group: Optional[str] = None
+        participant_group: Optional[str] = None
     ) -> Dict[str, Any]:
         """Generate a report on creative learning effectiveness"""
         
         report = {
             'period': time_period,
-            'student_group': student_group,
+            'participant_group': participant_group,
             'summary_metrics': {},
             'trend_analysis': {},
             'successful_approaches': [],
@@ -1206,7 +1206,7 @@ class CreativeSynthesisManager:
                 'average_engagement': sum(e['engagement_level'] for e in all_effectiveness) / len(all_effectiveness),
                 'average_learning_achievement': sum(e['learning_achievement'] for e in all_effectiveness) / len(all_effectiveness),
                 'average_creativity': sum(e['creative_expression'] for e in all_effectiveness) / len(all_effectiveness),
-                'average_satisfaction': sum(e['student_satisfaction'] for e in all_effectiveness) / len(all_effectiveness),
+                'average_satisfaction': sum(e['participant_satisfaction'] for e in all_effectiveness) / len(all_effectiveness),
                 'total_experiences_created': len(all_effectiveness)
             }
         
@@ -1216,7 +1216,7 @@ class CreativeSynthesisManager:
             report['successful_approaches'] = [
                 f"High engagement creative experiences: {len(high_performing)} out of {len(all_effectiveness)}",
                 "Most effective creative modalities based on outcomes",
-                "Student satisfaction patterns and preferences"
+                "Participant satisfaction patterns and preferences"
             ]
         
         # Generate recommendations
@@ -1237,7 +1237,7 @@ class CreativeSynthesisManager:
         self.goal_primitive = goal_primitive
     
     def set_empathetic_interaction(self, empathetic_interaction):
-        """Set reference to Empathetic Interaction for student understanding"""
+        """Set reference to Empathetic Interaction for participant understanding"""
         self.empathetic_interaction = empathetic_interaction
     
     def set_adaptive_reasoning(self, adaptive_reasoning):
@@ -1258,30 +1258,30 @@ class CreativeSynthesisManager:
             return await self.goal_primitive.analyze_learning_objective(learning_objective)
         return {}
     
-    async def collaborate_with_empathetic_interaction(self, student_id: str) -> StudentCreativeProfile:
-        """Get student creative profile from Empathetic Interaction"""
+    async def collaborate_with_empathetic_interaction(self, participant_id: str) -> ParticipantCreativeProfile:
+        """Get participant creative profile from Empathetic Interaction"""
         if self.empathetic_interaction:
-            student_data = await self.empathetic_interaction.get_student_profile(student_id)
-            # Convert to StudentCreativeProfile
-            return self._convert_to_creative_profile(student_data)
+            participant_data = await self.empathetic_interaction.get_participant_profile(participant_id)
+            # Convert to ParticipantCreativeProfile
+            return self._convert_to_creative_profile(participant_data)
         return self._default_creative_profile()
     
-    def _convert_to_creative_profile(self, student_data: Dict[str, Any]) -> StudentCreativeProfile:
-        """Convert general student data to creative profile"""
-        return StudentCreativeProfile(
+    def _convert_to_creative_profile(self, participant_data: Dict[str, Any]) -> ParticipantCreativeProfile:
+        """Convert general participant data to creative profile"""
+        return ParticipantCreativeProfile(
             preferred_modalities=[CreativeModality.STORY, CreativeModality.VISUAL],
             learning_styles=[LearningStyle.VISUAL, LearningStyle.KINESTHETIC],
-            engagement_history=student_data.get('engagement_history', {}),
-            creative_strengths=student_data.get('creative_strengths', ['visual_arts']),
-            challenge_areas=student_data.get('challenge_areas', []),
-            interest_themes=student_data.get('interests', ['science', 'adventure']),
-            attention_span=student_data.get('attention_span', 30),
-            collaboration_preference=student_data.get('collaboration_preference', 'small_group')
+            engagement_history=participant_data.get('engagement_history', {}),
+            creative_strengths=participant_data.get('creative_strengths', ['visual_arts']),
+            challenge_areas=participant_data.get('challenge_areas', []),
+            interest_themes=participant_data.get('interests', ['science', 'adventure']),
+            attention_span=participant_data.get('attention_span', 30),
+            collaboration_preference=participant_data.get('collaboration_preference', 'small_group')
         )
     
-    def _default_creative_profile(self) -> StudentCreativeProfile:
+    def _default_creative_profile(self) -> ParticipantCreativeProfile:
         """Create a default creative profile when no data is available"""
-        return StudentCreativeProfile(
+        return ParticipantCreativeProfile(
             preferred_modalities=[CreativeModality.STORY, CreativeModality.VISUAL, CreativeModality.GAME],
             learning_styles=[LearningStyle.VISUAL, LearningStyle.KINESTHETIC, LearningStyle.SOCIAL],
             engagement_history={},
@@ -1301,8 +1301,8 @@ if __name__ == "__main__":
         # Initialize the manager
         creative_manager = CreativeSynthesisManager()
         
-        # Create a sample student profile
-        student_profile = StudentCreativeProfile(
+        # Create a sample participant profile
+        participant_profile = ParticipantCreativeProfile(
             preferred_modalities=[CreativeModality.STORY, CreativeModality.GAME],
             learning_styles=[LearningStyle.VISUAL, LearningStyle.KINESTHETIC, LearningStyle.SOCIAL],
             engagement_history={'math': 0.6, 'science': 0.8, 'reading': 0.7},
@@ -1314,7 +1314,7 @@ if __name__ == "__main__":
         )
         
         # Define learning objective and context
-        learning_objective = "Students will understand the water cycle and explain how it affects weather patterns"
+        learning_objective = "Participants will understand the water cycle and explain how it affects weather patterns"
         subject_context = {
             'subject': 'science',
             'grade_level': 5,
@@ -1325,7 +1325,7 @@ if __name__ == "__main__":
         # Create a creative learning experience
         experience = await creative_manager.create_learning_experience(
             learning_objective=learning_objective,
-            student_profile=student_profile,
+            participant_profile=participant_profile,
             subject_context=subject_context,
             constraints={'max_time': 60, 'max_complexity': 7}
         )
@@ -1336,7 +1336,7 @@ if __name__ == "__main__":
         print(f"Surprise elements: {experience.surprise_elements}")
         
         # Simulate experience effectiveness evaluation
-        student_responses = {
+        participant_responses = {
             'engagement_scores': [0.8, 0.9, 0.7],
             'creativity_ratings': [0.85, 0.8],
             'satisfaction_survey': {'overall_rating': 0.85}
@@ -1348,14 +1348,14 @@ if __name__ == "__main__":
         
         effectiveness = await creative_manager.evaluate_experience_effectiveness(
             experience_id="water_cycle_adventure",
-            student_responses=student_responses,
+            participant_responses=participant_responses,
             learning_outcomes=learning_outcomes
         )
         
         print(f"Experience effectiveness: {effectiveness}")
         
         # Generate refinement recommendations
-        student_feedback = {
+        participant_feedback = {
             'preferred_modality': 'story',
             'activity_preferences': {'story_adventure': 0.9, 'visualization': 0.7},
             'most_engaging_elements': ['character_development', 'interactive_exploration'],
@@ -1363,9 +1363,9 @@ if __name__ == "__main__":
         }
         
         recommendations = await creative_manager.refine_creative_approach(
-            student_id="student_123",
+            participant_id="participant_123",
             experience_effectiveness=effectiveness,
-            student_feedback=student_feedback
+            participant_feedback=participant_feedback
         )
         
         print(f"Future recommendations: {recommendations}")

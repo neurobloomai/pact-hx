@@ -32,9 +32,9 @@ module.exports = (integrationServer) => {
   // 🎉 CREATE NEW LEARNING SESSION
   router.post('/',
     [
-      body('studentId')
+      body('participantId')
         .notEmpty()
-        .withMessage('Every learning adventure needs a hero! Please provide studentId 🌟'),
+        .withMessage('Every learning adventure needs a hero! Please provide participantId 🌟'),
       body('learningObjective')
         .isLength({ min: 5 })
         .withMessage('Tell us what amazing thing you want to learn! (at least 5 characters) 🎯'),
@@ -57,9 +57,9 @@ module.exports = (integrationServer) => {
       
       try {
         const {
-          studentId,
+          participantId,
           classId,
-          teacherId,
+          operatorId,
           learningObjective,
           subject = 'general',
           timeLimit = 30,
@@ -68,7 +68,7 @@ module.exports = (integrationServer) => {
         } = req.body;
 
         logger.session('create_request', 'received', {
-          studentId,
+          participantId,
           learningObjective,
           subject,
           joyGoal,
@@ -89,9 +89,9 @@ module.exports = (integrationServer) => {
 
         // Create the magical learning session!
         const sessionResult = await sessionManager.createSession({
-          studentId,
+          participantId,
           classId,
-          teacherId,
+          operatorId,
           learningObjective,
           subject,
           timeLimit,
@@ -102,7 +102,7 @@ module.exports = (integrationServer) => {
         const responseTime = Date.now() - startTime;
         
         logger.session(sessionResult.sessionId, 'created_successfully', {
-          studentId,
+          participantId,
           responseTime,
           joyGoal,
           experienceTitle: sessionResult.initialExperience?.title
@@ -110,10 +110,10 @@ module.exports = (integrationServer) => {
 
         res.status(201).json({
           success: true,
-          message: `🎉 Magical learning session created for ${studentId}!`,
+          message: `🎉 Magical learning session created for ${participantId}!`,
           session: {
             sessionId: sessionResult.sessionId,
-            studentId,
+            participantId,
             learningObjective,
             subject,
             timeLimit,
@@ -248,7 +248,7 @@ module.exports = (integrationServer) => {
           message: `🎊 Session ${sessionId} updated with magical enhancements!`,
           session: {
             sessionId: updatedSession.sessionId,
-            studentId: updatedSession.studentId,
+            participantId: updatedSession.participantId,
             status: updatedSession.status,
             currentJoyLevel: updatedSession.currentJoyLevel,
             lastUpdated: updatedSession.lastUpdated
@@ -282,7 +282,7 @@ module.exports = (integrationServer) => {
         .withMessage('Which magical session should we celebrate and conclude? 🎉'),
       body('reason')
         .optional()
-        .isIn(['completed', 'timeout', 'student_request', 'teacher_request', 'system_shutdown'])
+        .isIn(['completed', 'timeout', 'participant_request', 'operator_request', 'system_shutdown'])
         .withMessage('Let us know why this learning adventure is ending! 📝')
     ],
     handleValidationErrors,
@@ -334,10 +334,10 @@ module.exports = (integrationServer) => {
   // 📋 LIST ACTIVE SESSIONS
   router.get('/',
     [
-      query('studentId')
+      query('participantId')
         .optional()
         .notEmpty()
-        .withMessage('If filtering by student, provide a valid studentId! 👤'),
+        .withMessage('If filtering by participant, provide a valid participantId! 👤'),
       query('classId')
         .optional()
         .notEmpty()
@@ -359,7 +359,7 @@ module.exports = (integrationServer) => {
     async (req, res) => {
       try {
         const {
-          studentId,
+          participantId,
           classId,
           status = 'active',
           limit = 50,
@@ -368,7 +368,7 @@ module.exports = (integrationServer) => {
         } = req.query;
 
         logger.info('📋 Sessions list requested', {
-          filters: { studentId, classId, status },
+          filters: { participantId, classId, status },
           pagination: { limit, offset }
         });
 
@@ -379,8 +379,8 @@ module.exports = (integrationServer) => {
         }
 
         // Apply filters
-        if (studentId) {
-          sessions = sessions.filter(session => session.studentId === studentId);
+        if (participantId) {
+          sessions = sessions.filter(session => session.participantId === participantId);
         }
 
         if (classId) {
@@ -395,9 +395,9 @@ module.exports = (integrationServer) => {
         const formattedSessions = paginatedSessions.map(session => {
           const basicInfo = {
             sessionId: session.sessionId,
-            studentId: session.studentId,
+            participantId: session.participantId,
             classId: session.classId,
-            teacherId: session.teacherId,
+            operatorId: session.operatorId,
             subject: session.subject,
             learningObjective: session.learningObjective,
             status: session.status,
@@ -437,7 +437,7 @@ module.exports = (integrationServer) => {
             hasMore: (offset + parseInt(limit)) < totalSessions
           },
           systemOverview,
-          filters: { studentId, classId, status },
+          filters: { participantId, classId, status },
           delightful: true
         });
 
@@ -555,7 +555,7 @@ module.exports = (integrationServer) => {
         const analytics = {
           overview: {
             sessionId,
-            studentId: sessionDetails.basicInfo.studentId,
+            participantId: sessionDetails.basicInfo.participantId,
             duration: sessionDetails.timing.duration,
             progressPercentage: sessionDetails.timing.progressPercentage,
             overallJoyLevel: sessionDetails.joyMetrics.currentJoyLevel
